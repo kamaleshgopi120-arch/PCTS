@@ -1,0 +1,47 @@
+# ============================================================
+# requirements.txt — PCTS Project Dependencies
+# ============================================================
+# This file lists all third-party Python packages the project needs.
+#
+# To install all packages at once, run:
+#   pip install -r requirements.txt
+#
+# To update this file after installing new packages, run:
+#   pip freeze > requirements.txt
+#
+# Packages are listed with pinned versions (==) to ensure
+# everyone working on the project uses the exact same version.
+# ============================================================
+
+# --- Web Framework ---
+fastapi==0.115.12            # The main API framework
+
+# --- ASGI Server (runs the FastAPI app) ---
+uvicorn[standard]==0.34.0    # Development server for FastAPI
+
+# --- Data Validation ---
+pydantic==2.11.3             # Request/response schema validation
+pydantic[email]              # Email validation support
+
+# --- Database ORM ---
+SQLAlchemy==2.0.40           # Python ORM for MySQL
+
+# --- MySQL Database Driver ---
+pymysql==1.1.1               # Connects SQLAlchemy to MySQL
+cryptography==44.0.3         # Required by pymysql for secure connections
+
+# --- MongoDB Driver ---
+pymongo==4.12.1              # Connects Python to MongoDB
+
+# --- Password Hashing ---
+passlib[bcrypt]==1.7.4       # Secure password hashing with bcrypt
+bcrypt==4.3.0                # Required by passlib
+
+# --- JWT Authentication (Phase 10) ---
+python-jose[cryptography]==3.3.0  # JSON Web Tokens for user authentication
+
+# --- Environment Variables ---
+python-dotenv==1.1.0         # Load .env file variables into Python
+
+# --- Form Data Support ---
+python-multipart==0.0.20     # Required by FastAPI to receive form data
