@@ -1,0 +1,465 @@
+# Implementation Plan
+
+## What is an Implementation Plan?
+
+An implementation plan breaks the entire project into small, ordered phases.
+Each phase focuses on learning one thing and building one part of the system.
+
+> **Rule:** Do not start a new phase until the current phase is fully understood and working.
+
+---
+
+## Phase Overview
+
+| Phase | Name                                | Goal                                                     |
+|-------|-------------------------------------|----------------------------------------------------------|
+| 1     | Documentation and Design            | Understand the project completely before writing code    |
+| 2     | UML and ER Diagrams                 | Visualize the system with standard diagrams              |
+| 3     | Git and GitHub Setup                | Set up version control from the very beginning           |
+| 4     | Python Fundamentals                 | Ensure Python basics are solid before using frameworks   |
+| 5     | MySQL Setup and Raw SQL             | Learn the database independently before using an ORM     |
+| 6     | PL/SQL Components                   | Implement stored procedures, functions, and triggers     |
+| 7     | FastAPI Introduction                | Build a simple API to understand the framework           |
+| 8     | Pydantic Validation                 | Understand how data is validated in FastAPI              |
+| 9     | SQLAlchemy and Database Models      | Connect Python to MySQL using an ORM                     |
+| 10    | User Authentication API             | Implement login, registration, and role-based access     |
+| 11    | Customer Management API             | Implement CRUD operations for customers                  |
+| 12    | Parcel Booking API                  | Implement parcel creation and Tracking ID generation     |
+| 13    | Parcel Status and Tracking API      | Implement status updates and tracking endpoint           |
+| 14    | MongoDB Integration                 | Connect to MongoDB and store tracking history events     |
+| 15    | Delivery Management API             | Implement delivery assignment and status updates         |
+| 16    | Payment Management API              | Implement payment recording and status management        |
+| 17    | Reports API                         | Implement summary report endpoints                       |
+| 18    | Exception Handling and Validation   | Harden the API against bad inputs and database errors    |
+| 19    | Frontend — Static Pages             | Build the HTML pages and CSS styling                     |
+| 20    | Frontend — JavaScript Integration   | Connect the HTML pages to the backend API                |
+| 21    | Database Indexing                   | Add indexes to improve query performance                 |
+| 22    | Testing                             | Write and run basic tests to verify the system works     |
+| 23    | Final Documentation and Submission  | Polish all documentation and submit the project          |
+
+---
+
+## Detailed Phase Descriptions
+
+---
+
+### Phase 1 — Documentation and Design
+
+**Goal:** Fully understand the system before touching any code.
+
+**What you learn:**
+- How to write a problem statement.
+- How to define functional and non-functional requirements.
+- How to plan a software project.
+
+**Deliverables:**
+- [ ] `problemStatement.md` — completed.
+- [ ] `requirements.md` — completed.
+- [ ] `context.md` — completed.
+- [ ] `architecture.md` — completed.
+- [ ] `databaseDesign.md` — completed.
+- [ ] `edge_case.md` — completed.
+- [ ] `implementation_plan.md` — this file.
+- [ ] `README.md` — completed.
+
+**Status:** ✅ In Progress
+
+---
+
+### Phase 2 — UML and ER Diagrams
+
+**Goal:** Create visual diagrams that represent the system structure and behavior.
+
+**What you learn:**
+- Use Case Diagram — what each user can do.
+- Class Diagram — how data/objects are structured.
+- State Diagram — how a parcel's status changes over time.
+- ER Diagram — how database tables relate to each other.
+
+**Deliverables:**
+- [x] `docs/use-case-diagram.md` — Use Case Diagram image embedded.
+- [x] `docs/class-diagram.md` — Class Diagram image embedded.
+- [x] `docs/state-diagram.md` — State Diagram image embedded.
+- [x] `docs/er-diagram.md` — ER Diagram image embedded.
+
+**Tools to use:** draw.io (free, runs in browser at draw.io), or pen and paper scanned.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 3 — Git and GitHub Setup
+
+**Goal:** Set up version control so every change is tracked from the beginning.
+
+**What you learn:**
+- What is Git and why it matters.
+- `git init`, `git add`, `git commit`, `git push`.
+- How to create a GitHub repository.
+- Writing a good commit message.
+
+**Deliverables:**
+- [ ] Local Git repository initialized.
+- [ ] `.gitignore` file created (to exclude virtual environments, `__pycache__`, etc.).
+- [ ] GitHub repository created.
+- [ ] First commit pushed to GitHub.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 4 — Python Fundamentals
+
+**Goal:** Make sure the Python skills needed for this project are solid.
+
+**What you learn/review:**
+- Variables, data types, conditionals, loops.
+- Functions and return values.
+- Dictionaries and lists.
+- Classes and objects (basic OOP).
+- Reading/writing files.
+- Exception handling with `try-except`.
+- Installing and using packages with `pip`.
+- Virtual environments (`venv`).
+
+**Deliverables:**
+- [ ] Python virtual environment (`venv`) created for the project.
+- [ ] `requirements.txt` file created with initial packages.
+- [ ] Small Python practice scripts written (optional).
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 5 — MySQL Setup and Raw SQL
+
+**Goal:** Learn the database first using raw SQL before introducing SQLAlchemy.
+
+**What you learn:**
+- Installing MySQL on the local machine.
+- Creating a database and connecting to it.
+- Writing SQL: `CREATE TABLE`, `INSERT`, `SELECT`, `UPDATE`, `DELETE`.
+- Primary keys, foreign keys, constraints.
+- Joins between tables.
+
+**Deliverables:**
+- [ ] MySQL installed and running.
+- [ ] Database `pcts_db` created.
+- [ ] All tables from `databaseDesign.md` created using raw SQL.
+- [ ] Sample data inserted manually to test the structure.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 6 — PL/SQL Components
+
+**Goal:** Implement the stored procedures, functions, and triggers required for the
+DBMS laboratory component.
+
+**What you learn:**
+- What a Stored Procedure is and how to write one.
+- What a Stored Function is and how it differs from a procedure.
+- What a Trigger is and when it fires.
+- How to call stored procedures from Python.
+
+**Deliverables:**
+- [ ] `sql/procedures.sql` file created.
+- [ ] `calculate_charge` function implemented.
+- [ ] `update_parcel_status` procedure implemented.
+- [ ] `trg_after_status_update` trigger implemented.
+- [ ] `get_monthly_report` procedure implemented.
+- [ ] All PL/SQL components tested in MySQL Workbench or MySQL CLI.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 7 — FastAPI Introduction
+
+**Goal:** Build and run a simple FastAPI application to understand the framework.
+
+**What you learn:**
+- Installing FastAPI and Uvicorn.
+- Creating a FastAPI app.
+- Defining a GET endpoint.
+- Running the app with `uvicorn`.
+- Viewing auto-generated docs at `http://127.0.0.1:8000/docs`.
+
+**Deliverables:**
+- [ ] `backend/main.py` created with a basic "Hello, PCTS!" endpoint.
+- [ ] App runs locally without errors.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 8 — Pydantic Validation
+
+**Goal:** Understand how Pydantic validates data in FastAPI.
+
+**What you learn:**
+- Creating Pydantic models (schemas).
+- Required vs optional fields.
+- Data type enforcement.
+- Custom validators.
+- How FastAPI uses Pydantic automatically for request bodies.
+
+**Deliverables:**
+- [ ] Pydantic schemas created for: User, Customer, Parcel.
+- [ ] Validation tested by sending invalid data to the API (and seeing errors).
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 9 — SQLAlchemy and Database Models
+
+**Goal:** Connect FastAPI to MySQL using SQLAlchemy.
+
+**What you learn:**
+- What an ORM is and why it is useful.
+- Defining SQLAlchemy models (Python classes = database tables).
+- Creating a database session.
+- CRUD operations using SQLAlchemy (add, query, update, delete).
+
+**Deliverables:**
+- [ ] `backend/database.py` — database connection setup.
+- [ ] `backend/models/` — all table models created as Python classes.
+- [ ] Basic CRUD operations tested.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 10 — User Authentication API
+
+**What you build:** `/api/auth/register` and `/api/auth/login` endpoints.
+
+**What you learn:**
+- Password hashing with `passlib` (bcrypt).
+- JWT tokens (JSON Web Tokens) for session management.
+- How to protect routes with role-based access.
+
+**Deliverables:**
+- [ ] Register endpoint working.
+- [ ] Login endpoint returning a JWT token.
+- [ ] Protected route that requires a valid token.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 11 — Customer Management API
+
+**What you build:** CRUD API endpoints for the `customer` table.
+
+**Endpoints:**
+- `GET /api/customers` — list all customers.
+- `GET /api/customers/{id}` — get one customer.
+- `PUT /api/customers/{id}` — update customer.
+- `DELETE /api/customers/{id}` — delete customer.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 12 — Parcel Booking API
+
+**What you build:** Parcel creation endpoint with Tracking ID generation.
+
+**Endpoint:** `POST /api/parcels`
+
+**What you learn:**
+- Generating a unique Tracking ID (format: `PCTS-YYYYMMDD-XXXX`).
+- Calculating delivery charges using the charge table.
+- Atomic transactions (parcel + payment created together).
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 13 — Parcel Status and Tracking API
+
+**What you build:** Status update and tracking endpoints.
+
+**Endpoints:**
+- `GET /api/track/{tracking_id}` — public tracking endpoint.
+- `PUT /api/parcels/{id}/status` — update parcel status (admin/delivery).
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 14 — MongoDB Integration
+
+**What you build:** Connection to MongoDB and storage of tracking history.
+
+**What you learn:**
+- Connecting to MongoDB from Python using `pymongo`.
+- Inserting documents into a collection.
+- Querying documents by `tracking_id`.
+
+**Deliverables:**
+- [ ] `backend/mongo.py` — MongoDB connection.
+- [ ] Tracking event saved to MongoDB every time a status is updated.
+- [ ] Tracking endpoint returns history from MongoDB.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 15 — Delivery Management API
+
+**What you build:** Delivery assignment and status update endpoints.
+
+**Endpoints:**
+- `POST /api/deliveries` — assign a parcel to a delivery person.
+- `GET /api/deliveries/my` — delivery person views their assigned parcels.
+- `PUT /api/deliveries/{id}/status` — delivery person updates status.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 16 — Payment Management API
+
+**What you build:** Payment viewing and status update endpoints.
+
+**Endpoints:**
+- `GET /api/payments/{parcel_id}` — view payment for a parcel.
+- `PUT /api/payments/{id}` — update payment status.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 17 — Reports API
+
+**What you build:** Summary report endpoints for the admin.
+
+**Endpoints:**
+- `GET /api/reports/parcels` — parcels grouped by status.
+- `GET /api/reports/payments` — payments grouped by status.
+- `GET /api/reports/deliveries` — deliveries per delivery person.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 18 — Exception Handling and Validation
+
+**Goal:** Ensure the API handles all edge cases from `edge_case.md` gracefully.
+
+**What you learn:**
+- FastAPI exception handlers.
+- Custom `HTTPException` responses.
+- Database transaction rollback on failure.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 19 — Frontend: Static Pages
+
+**What you build:** HTML pages for every screen of the application.
+
+**Pages:**
+- `index.html` — Home / landing page.
+- `login.html` — Login form.
+- `register.html` — Registration form.
+- `book_parcel.html` — Parcel booking form.
+- `track.html` — Parcel tracking page.
+- `dashboard.html` — Admin dashboard.
+- `delivery_dashboard.html` — Delivery person dashboard.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 20 — Frontend: JavaScript Integration
+
+**Goal:** Connect the HTML pages to the FastAPI backend.
+
+**What you learn:**
+- `fetch()` API in JavaScript.
+- Sending GET and POST requests from the browser.
+- Displaying API response data in the HTML.
+- Storing JWT token in `localStorage`.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 21 — Database Indexing
+
+**Goal:** Add indexes to improve query performance for commonly searched fields.
+
+**What you learn:**
+- What a database index is and how it works.
+- When to add an index (fields used in WHERE clauses frequently).
+
+**Indexes to add:**
+- `parcel.tracking_id` — searched frequently.
+- `customer.email` — searched on login.
+- `payment.parcel_id` — joined frequently.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 22 — Testing
+
+**Goal:** Verify that all the main features work correctly.
+
+**What you learn:**
+- Using FastAPI's built-in test client.
+- Writing basic test cases.
+- Testing edge cases and error responses.
+
+**Status:** 🔲 Not Started
+
+---
+
+### Phase 23 — Final Documentation and Submission
+
+**Goal:** Polish and finalize everything for submission.
+
+**Deliverables:**
+- [ ] All documentation files reviewed and updated.
+- [ ] README finalized with setup instructions.
+- [ ] All diagrams finalized.
+- [ ] Final commit pushed to GitHub.
+- [ ] Project presented and submitted.
+
+**Status:** 🔲 Not Started
+
+---
+
+## Progress Tracker
+
+| Phase | Name                            | Status         |
+|-------|---------------------------------|----------------|
+| 1     | Documentation and Design        | ✅ In Progress |
+| 2     | UML and ER Diagrams             | ✅ Complete     |
+| 3     | Git and GitHub Setup            | 🔲 Not Started |
+| 4     | Python Fundamentals             | 🔲 Not Started |
+| 5     | MySQL Setup and Raw SQL         | 🔲 Not Started |
+| 6     | PL/SQL Components               | 🔲 Not Started |
+| 7     | FastAPI Introduction            | 🔲 Not Started |
+| 8     | Pydantic Validation             | 🔲 Not Started |
+| 9     | SQLAlchemy and Models           | 🔲 Not Started |
+| 10    | User Authentication API         | 🔲 Not Started |
+| 11    | Customer Management API         | 🔲 Not Started |
+| 12    | Parcel Booking API              | 🔲 Not Started |
+| 13    | Parcel Status and Tracking API  | 🔲 Not Started |
+| 14    | MongoDB Integration             | 🔲 Not Started |
+| 15    | Delivery Management API         | 🔲 Not Started |
+| 16    | Payment Management API          | 🔲 Not Started |
+| 17    | Reports API                     | 🔲 Not Started |
+| 18    | Exception Handling              | 🔲 Not Started |
+| 19    | Frontend: Static Pages          | 🔲 Not Started |
+| 20    | Frontend: JS Integration        | 🔲 Not Started |
+| 21    | Database Indexing               | 🔲 Not Started |
+| 22    | Testing                         | 🔲 Not Started |
+| 23    | Final Documentation             | 🔲 Not Started |

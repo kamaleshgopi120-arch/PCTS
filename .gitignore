@@ -1,0 +1,84 @@
+# ==============================================================
+# .gitignore for Parcel and Courier Tracking System (PCTS)
+# ==============================================================
+# This file tells Git which files and folders to IGNORE.
+# Ignored files are never tracked, committed, or pushed to GitHub.
+# ==============================================================
+
+# ---------------------------------------------------------------
+# Python virtual environment
+# ---------------------------------------------------------------
+# When we run "python -m venv venv", Python creates a "venv" folder
+# with thousands of files. We do NOT include this in Git because:
+# - It is very large (100MB+)
+# - Anyone can recreate it using: pip install -r requirements.txt
+venv/
+env/
+.env/
+.venv/
+
+# ---------------------------------------------------------------
+# Python compiled files
+# ---------------------------------------------------------------
+# Python creates these automatically when running your code.
+# They are machine-specific and should never be committed.
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# ---------------------------------------------------------------
+# Environment / secret variables file
+# ---------------------------------------------------------------
+# The .env file will store sensitive info like database passwords,
+# secret keys, etc. NEVER commit this to GitHub.
+.env
+*.env
+
+# ---------------------------------------------------------------
+# IDE and editor files
+# ---------------------------------------------------------------
+# These are settings files created by your code editor.
+# Other developers use different editors, so these are not needed.
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ---------------------------------------------------------------
+# Operating system files
+# ---------------------------------------------------------------
+# Windows and Mac create these files automatically.
+# They serve no purpose in the project.
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# ---------------------------------------------------------------
+# Database files
+# ---------------------------------------------------------------
+# SQLite database files (if used for testing)
+*.db
+*.sqlite3
+
+# ---------------------------------------------------------------
+# Log files
+# ---------------------------------------------------------------
+# Application log files are generated at runtime.
+*.log
+logs/
+
+# ---------------------------------------------------------------
+# Distribution / packaging (Python)
+# ---------------------------------------------------------------
+dist/
+build/
+*.egg-info/
+
+# ---------------------------------------------------------------
+# Test coverage reports
+# ---------------------------------------------------------------
+.coverage
+htmlcov/
+.pytest_cache/

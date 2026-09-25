@@ -1,0 +1,21 @@
+# .gitattributes
+# This file tells Git how to handle line endings across different operating systems.
+# Windows uses CRLF (\r\n), Linux/Mac use LF (\n).
+# "text=auto" lets Git normalize line endings automatically — silences the warnings.
+
+* text=auto
+*.md text eol=lf
+*.py text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.sql text eol=lf
+*.json text eol=lf
+*.txt text eol=lf
+
+# Binary files — tell Git NOT to try to convert line endings
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.gif binary
+*.ico binary
