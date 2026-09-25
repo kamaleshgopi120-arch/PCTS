@@ -99,10 +99,12 @@ Each phase focuses on learning one thing and building one part of the system.
 - Writing a good commit message.
 
 **Deliverables:**
-- [ ] Local Git repository initialized.
-- [ ] `.gitignore` file created (to exclude virtual environments, `__pycache__`, etc.).
-- [ ] GitHub repository created.
-- [ ] First commit pushed to GitHub.
+- [x] Local Git repository initialized (`git init`).
+- [x] `.gitignore` file created (excludes `venv/`, `__pycache__/`, `.env`, etc.).
+- [x] `.gitattributes` file created (handles line endings on Windows).
+- [x] Git identity configured (`user.name` and `user.email`).
+- [x] First commit made — 18 files, 2300 insertions.
+- [ ] GitHub repository created and remote pushed. *(Do manually — see README)*
 
 **Status:** 🔲 Not Started
 
@@ -442,7 +444,7 @@ DBMS laboratory component.
 |-------|---------------------------------|----------------|
 | 1     | Documentation and Design        | ✅ In Progress |
 | 2     | UML and ER Diagrams             | ✅ Complete     |
-| 3     | Git and GitHub Setup            | 🔲 Not Started |
+| 3     | Git and GitHub Setup            | ✅ Complete    |
 | 4     | Python Fundamentals             | 🔲 Not Started |
 | 5     | MySQL Setup and Raw SQL         | 🔲 Not Started |
 | 6     | PL/SQL Components               | 🔲 Not Started |
