@@ -24,6 +24,14 @@ from .parcel import (
     TrackingHistoryEvent,
     calculate_shipping_charge
 )
+from .delivery import (
+    ParcelDeliveryStatus,
+    VALID_STATUS_TRANSITIONS,
+    DeliveryCreate,
+    DeliveryStatusUpdate,
+    DeliveryPersonResponse,
+    DeliveryResponse
+)
 
 __all__ = [
     "UserRole",
@@ -42,5 +50,11 @@ __all__ = [
     "ParcelResponse",
     "TrackingResponse",
     "TrackingHistoryEvent",
-    "calculate_shipping_charge"
+    "calculate_shipping_charge",
+    "ParcelDeliveryStatus",
+    "VALID_STATUS_TRANSITIONS",
+    "DeliveryCreate",
+    "DeliveryStatusUpdate",
+    "DeliveryPersonResponse",
+    "DeliveryResponse"
 ]

@@ -340,12 +340,13 @@ DBMS laboratory component.
 
 **What you build:** Delivery assignment and status update endpoints.
 
-**Endpoints:**
-- `POST /api/deliveries` — assign a parcel to a delivery person.
-- `GET /api/deliveries/my` — delivery person views their assigned parcels.
-- `PUT /api/deliveries/{id}/status` — delivery person updates status.
+**Deliverables:**
+- [x] `POST /api/deliveries` — assign a parcel to an active delivery agent with edge case checks (EC-26, EC-27, EC-28, EC-29).
+- [x] `GET /api/deliveries/my` — delivery person views their assigned parcels with pending/completed filters.
+- [x] `PUT /api/deliveries/{id}/status` — delivery person updates status and location with transition rules (EC-22, EC-23, EC-24, EC-25).
+- [x] Automated test suite verified (`backend/test_deliveries.py`).
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -481,7 +482,7 @@ DBMS laboratory component.
 | 12    | Parcel Booking API              | ✅ Complete     |
 | 13    | Parcel Status and Tracking API  | ✅ Complete     |
 | 14    | MongoDB Integration             | ✅ Complete     |
-| 15    | Delivery Management API         | 🔲 Not Started |
+| 15    | Delivery Management API         | ✅ Complete     |
 | 16    | Payment Management API          | 🔲 Not Started |
 | 17    | Reports API                     | 🔲 Not Started |
 | 18    | Exception Handling              | 🔲 Not Started |

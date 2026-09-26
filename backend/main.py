@@ -167,6 +167,14 @@ from backend.routers.tracking import router as tracking_router
 app.include_router(tracking_router)
 
 
+# -----------------------------------------------------------------------------
+# PHASE 15: DELIVERY MANAGEMENT ROUTER
+# -----------------------------------------------------------------------------
+from backend.routers.deliveries import router as deliveries_router
+
+app.include_router(deliveries_router)
+
+
 # =============================================================================
 # PHASE 8: PYDANTIC SCHEMA VALIDATION DEMONSTRATION ENDPOINTS
 # =============================================================================
