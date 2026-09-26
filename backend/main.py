@@ -131,6 +131,14 @@ def database_health_check(db: Session = Depends(get_db)):
     }
 
 
+# -----------------------------------------------------------------------------
+# PHASE 10: USER AUTHENTICATION & AUTHORIZATION ROUTER
+# -----------------------------------------------------------------------------
+from backend.routers.auth import router as auth_router
+
+app.include_router(auth_router)
+
+
 # =============================================================================
 # PHASE 8: PYDANTIC SCHEMA VALIDATION DEMONSTRATION ENDPOINTS
 # =============================================================================

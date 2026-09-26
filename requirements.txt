@@ -33,12 +33,12 @@ cryptography==44.0.3         # Required by pymysql for secure connections
 # --- MongoDB Driver ---
 pymongo==4.12.1              # Connects Python to MongoDB
 
-# --- Password Hashing ---
-passlib[bcrypt]==1.7.4       # Secure password hashing with bcrypt
-bcrypt==4.3.0                # Required by passlib
+# --- Password Hashing & Security ---
+bcrypt==4.3.0                # Cryptographic hashing for passwords
+passlib[bcrypt]==1.7.4       # Password hashing framework
 
 # --- JWT Authentication (Phase 10) ---
-python-jose[cryptography]==3.3.0  # JSON Web Tokens for user authentication
+pyjwt[crypto]==2.15.0        # JSON Web Tokens for user session authentication
 
 # --- Environment Variables ---
 python-dotenv==1.1.0         # Load .env file variables into Python

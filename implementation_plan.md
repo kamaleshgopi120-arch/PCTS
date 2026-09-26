@@ -250,11 +250,13 @@ DBMS laboratory component.
 - How to protect routes with role-based access.
 
 **Deliverables:**
-- [ ] Register endpoint working.
-- [ ] Login endpoint returning a JWT token.
-- [ ] Protected route that requires a valid token.
+- [x] Register endpoint working (`POST /api/auth/register`).
+- [x] Login endpoint returning a signed JWT token (`POST /api/auth/login`).
+- [x] Protected routes requiring valid Bearer tokens (`GET /api/auth/me`).
+- [x] Role-Based Access Control (RBAC) implemented (`GET /api/auth/admin-only` requiring admin role).
+- [x] Automated test suite verified (`backend/test_auth.py`).
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -457,7 +459,7 @@ DBMS laboratory component.
 | 7     | FastAPI Introduction            | ✅ Complete     |
 | 8     | Pydantic Validation             | ✅ Complete     |
 | 9     | SQLAlchemy and Models           | ✅ Complete     |
-| 10    | User Authentication API         | 🔲 Not Started |
+| 10    | User Authentication API         | ✅ Complete     |
 | 11    | Customer Management API         | 🔲 Not Started |
 | 12    | Parcel Booking API              | 🔲 Not Started |
 | 13    | Parcel Status and Tracking API  | 🔲 Not Started |

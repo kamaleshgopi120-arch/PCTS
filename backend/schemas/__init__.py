@@ -5,7 +5,15 @@ Export all Pydantic schemas for the PCTS application.
 =============================================================================
 """
 
-from .user import UserRole, UserCreate, UserLogin, UserResponse
+from .user import (
+    UserRole,
+    UserCreate,
+    UserRegisterRequest,
+    UserLogin,
+    Token,
+    UserResponse,
+    UserDetailResponse
+)
 from .customer import CustomerCreate, CustomerUpdate, CustomerResponse
 from .parcel import (
     ParcelType,
@@ -18,8 +26,11 @@ from .parcel import (
 __all__ = [
     "UserRole",
     "UserCreate",
+    "UserRegisterRequest",
     "UserLogin",
+    "Token",
     "UserResponse",
+    "UserDetailResponse",
     "CustomerCreate",
     "CustomerUpdate",
     "CustomerResponse",
