@@ -212,10 +212,11 @@ DBMS laboratory component.
 - How FastAPI uses Pydantic automatically for request bodies.
 
 **Deliverables:**
-- [ ] Pydantic schemas created for: User, Customer, Parcel.
-- [ ] Validation tested by sending invalid data to the API (and seeing errors).
+- [x] Pydantic schemas created for: User, Customer, Parcel (`backend/schemas/`).
+- [x] Validation tested by sending invalid data to the API (and seeing errors) (`backend/test_schemas.py`).
+- [x] Enforced edge cases from `edge_case.md` (EC-06, EC-10, EC-13, EC-15).
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -453,7 +454,7 @@ DBMS laboratory component.
 | 5     | MySQL Setup and Raw SQL         | ✅ Complete     |
 | 6     | PL/SQL Components               | ✅ Complete     |
 | 7     | FastAPI Introduction            | ✅ Complete     |
-| 8     | Pydantic Validation             | 🔲 Not Started |
+| 8     | Pydantic Validation             | ✅ Complete     |
 | 9     | SQLAlchemy and Models           | 🔲 Not Started |
 | 10    | User Authentication API         | 🔲 Not Started |
 | 11    | Customer Management API         | 🔲 Not Started |

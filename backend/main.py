@@ -107,6 +107,110 @@ def system_info():
     }
 
 
+# =============================================================================
+# PHASE 8: PYDANTIC SCHEMA VALIDATION DEMONSTRATION ENDPOINTS
+# =============================================================================
+# These endpoints demonstrate how FastAPI automatically validates JSON request
+# bodies against Pydantic models. If the client submits invalid data (e.g.,
+# bad email, short password, non-numeric phone, weight <= 0, or same source &
+# destination cities), FastAPI automatically rejects the request with HTTP 422
+# Unprocessable Entity and an informative error breakdown.
+# =============================================================================
+
+from backend.schemas import (
+    UserCreate,
+    UserResponse,
+    CustomerCreate,
+    CustomerResponse,
+    ParcelCreate,
+    ParcelResponse,
+    calculate_shipping_charge
+)
+
+
+@app.post(
+    "/demo/users/register",
+    response_model=UserResponse,
+    status_code=201,
+    summary="Validate User Registration Payload",
+    tags=["Validation Demo"]
+)
+def demo_register_user(user_in: UserCreate):
+    """
+    Demonstrates Pydantic user validation:
+    - Validates email format (EmailStr)
+    - Enforces password length >= 8 characters (EC-06)
+    - Validates allowed user roles (customer, admin, delivery)
+    """
+    # Simulate DB persistence and ID assignment
+    return UserResponse(
+        user_id=101,
+        email=user_in.email,
+        role=user_in.role,
+        created_at=datetime.now()
+    )
+
+
+@app.post(
+    "/demo/customers",
+    response_model=CustomerResponse,
+    status_code=201,
+    summary="Validate Customer Profile Payload",
+    tags=["Validation Demo"]
+)
+def demo_create_customer(customer_in: CustomerCreate):
+    """
+    Demonstrates Pydantic customer validation:
+    - Enforces 10-14 digit numeric phone numbers without letters (EC-10)
+    - Validates minimum name and city length
+    """
+    return CustomerResponse(
+        customer_id=501,
+        user_id=customer_in.user_id,
+        full_name=customer_in.full_name,
+        phone=customer_in.phone,
+        address=customer_in.address,
+        city=customer_in.city
+    )
+
+
+@app.post(
+    "/demo/parcels/book",
+    response_model=ParcelResponse,
+    status_code=201,
+    summary="Validate Parcel Booking Payload and Preview Charge",
+    tags=["Validation Demo"]
+)
+def demo_book_parcel(parcel_in: ParcelCreate):
+    """
+    Demonstrates Pydantic parcel validation:
+    - Enforces weight > 0 kg (EC-13)
+    - Enforces source_city != destination_city (EC-15)
+    - Automatically calculates official shipping charge based on weight tiers
+    """
+    computed_charge = calculate_shipping_charge(parcel_in.weight_kg)
+    generated_tracking_id = f"PCTS-{datetime.now().strftime('%Y%m%d')}-0001"
+
+    return ParcelResponse(
+        parcel_id=901,
+        tracking_id=generated_tracking_id,
+        customer_id=parcel_in.customer_id,
+        sender_name=parcel_in.sender_name,
+        sender_phone=parcel_in.sender_phone,
+        receiver_name=parcel_in.receiver_name,
+        receiver_phone=parcel_in.receiver_phone,
+        source_city=parcel_in.source_city,
+        destination_city=parcel_in.destination_city,
+        parcel_type=parcel_in.parcel_type.value,
+        weight_kg=parcel_in.weight_kg,
+        description=parcel_in.description,
+        charge=computed_charge,
+        booked_at=datetime.now(),
+        status="Booked",
+        location=f"{parcel_in.source_city} Booking Office"
+    )
+
+
 # -----------------------------------------------------------------------------
 # Direct Execution Support
 # -----------------------------------------------------------------------------
