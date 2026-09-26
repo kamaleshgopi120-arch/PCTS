@@ -175,6 +175,14 @@ from backend.routers.deliveries import router as deliveries_router
 app.include_router(deliveries_router)
 
 
+# -----------------------------------------------------------------------------
+# PHASE 16: PAYMENT MANAGEMENT ROUTER
+# -----------------------------------------------------------------------------
+from backend.routers.payments import router as payments_router
+
+app.include_router(payments_router)
+
+
 # =============================================================================
 # PHASE 8: PYDANTIC SCHEMA VALIDATION DEMONSTRATION ENDPOINTS
 # =============================================================================

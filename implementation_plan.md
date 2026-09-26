@@ -354,11 +354,13 @@ DBMS laboratory component.
 
 **What you build:** Payment viewing and status update endpoints.
 
-**Endpoints:**
-- `GET /api/payments/{parcel_id}` — view payment for a parcel.
-- `PUT /api/payments/{id}` — update payment status.
+**Deliverables:**
+- [x] `GET /api/payments/{parcel_id}` — view payment details with customer access control and EC-32/EC-33 verification.
+- [x] `PUT /api/payments/{id}` — update/settle payment status with amount validation (EC-31) and terminal state enforcement (EC-30).
+- [x] `GET /api/payments` — admin listing of all payments with status filtering.
+- [x] Automated test suite verified (`backend/test_payments.py`).
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -483,7 +485,7 @@ DBMS laboratory component.
 | 13    | Parcel Status and Tracking API  | ✅ Complete     |
 | 14    | MongoDB Integration             | ✅ Complete     |
 | 15    | Delivery Management API         | ✅ Complete     |
-| 16    | Payment Management API          | 🔲 Not Started |
+| 16    | Payment Management API          | ✅ Complete     |
 | 17    | Reports API                     | 🔲 Not Started |
 | 18    | Exception Handling              | 🔲 Not Started |
 | 19    | Frontend: Static Pages          | 🔲 Not Started |
