@@ -265,12 +265,18 @@ DBMS laboratory component.
 **What you build:** CRUD API endpoints for the `customer` table.
 
 **Endpoints:**
-- `GET /api/customers` — list all customers.
-- `GET /api/customers/{id}` — get one customer.
-- `PUT /api/customers/{id}` — update customer.
-- `DELETE /api/customers/{id}` — delete customer.
+- `GET /api/customers` — list all customers (Admin only, paginated).
+- `GET /api/customers/{id}` — get one customer (Customer self-access or Admin).
+- `PUT /api/customers/{id}` — update customer details.
+- `DELETE /api/customers/{id}` — delete customer (Admin only, enforces EC-11 parcel integrity).
 
-**Status:** 🔲 Not Started
+**Deliverables:**
+- [x] All 4 CRUD endpoints working.
+- [x] Query parameter filtering (city, search) and pagination (skip, limit).
+- [x] Edge cases handled: EC-08 (not found), EC-10 (phone format), EC-11 (parcels exist).
+- [x] Endpoints verified with automated test suite (`backend/test_customers.py`).
+
+**Status:** ✅ Complete
 
 ---
 
@@ -460,7 +466,7 @@ DBMS laboratory component.
 | 8     | Pydantic Validation             | ✅ Complete     |
 | 9     | SQLAlchemy and Models           | ✅ Complete     |
 | 10    | User Authentication API         | ✅ Complete     |
-| 11    | Customer Management API         | 🔲 Not Started |
+| 11    | Customer Management API         | ✅ Complete     |
 | 12    | Parcel Booking API              | 🔲 Not Started |
 | 13    | Parcel Status and Tracking API  | 🔲 Not Started |
 | 14    | MongoDB Integration             | 🔲 Not Started |

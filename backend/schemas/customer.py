@@ -85,5 +85,6 @@ class CustomerResponse(CustomerBase):
     """Schema for returning customer profile to client."""
     customer_id: int = Field(..., description="Unique customer identifier")
     user_id: int = Field(..., description="Associated user ID")
+    email: Optional[str] = Field(default=None, description="Linked user account email")
 
     model_config = ConfigDict(from_attributes=True)

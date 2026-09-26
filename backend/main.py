@@ -139,6 +139,14 @@ from backend.routers.auth import router as auth_router
 app.include_router(auth_router)
 
 
+# -----------------------------------------------------------------------------
+# PHASE 11: CUSTOMER MANAGEMENT ROUTER
+# -----------------------------------------------------------------------------
+from backend.routers.customers import router as customers_router
+
+app.include_router(customers_router)
+
+
 # =============================================================================
 # PHASE 8: PYDANTIC SCHEMA VALIDATION DEMONSTRATION ENDPOINTS
 # =============================================================================
