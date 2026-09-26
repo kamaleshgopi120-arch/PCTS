@@ -183,6 +183,14 @@ from backend.routers.payments import router as payments_router
 app.include_router(payments_router)
 
 
+# -----------------------------------------------------------------------------
+# PHASE 17: REPORTS & ANALYTICS ROUTER
+# -----------------------------------------------------------------------------
+from backend.routers.reports import router as reports_router
+
+app.include_router(reports_router)
+
+
 # =============================================================================
 # PHASE 8: PYDANTIC SCHEMA VALIDATION DEMONSTRATION ENDPOINTS
 # =============================================================================

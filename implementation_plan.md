@@ -368,12 +368,14 @@ DBMS laboratory component.
 
 **What you build:** Summary report endpoints for the admin.
 
-**Endpoints:**
-- `GET /api/reports/parcels` — parcels grouped by status.
-- `GET /api/reports/payments` — payments grouped by status.
-- `GET /api/reports/deliveries` — deliveries per delivery person.
+**Deliverables:**
+- [x] `GET /api/reports/parcels` — parcels grouped by status with charges, weights, and percentage shares.
+- [x] `GET /api/reports/payments` — payments grouped by status, cash flow, and payment method breakdowns.
+- [x] `GET /api/reports/deliveries` — courier workforce workload and completion rate metrics.
+- [x] `GET /api/reports/monthly` — monthly executive summary integrated with MySQL stored procedure.
+- [x] Automated test suite verified (`backend/test_reports.py`).
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -486,7 +488,7 @@ DBMS laboratory component.
 | 14    | MongoDB Integration             | ✅ Complete     |
 | 15    | Delivery Management API         | ✅ Complete     |
 | 16    | Payment Management API          | ✅ Complete     |
-| 17    | Reports API                     | 🔲 Not Started |
+| 17    | Reports API                     | ✅ Complete     |
 | 18    | Exception Handling              | 🔲 Not Started |
 | 19    | Frontend: Static Pages          | 🔲 Not Started |
 | 20    | Frontend: JS Integration        | 🔲 Not Started |

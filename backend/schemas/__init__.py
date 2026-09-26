@@ -38,6 +38,15 @@ from .payment import (
     PaymentCreate,
     PaymentResponse
 )
+from .report import (
+    ParcelStatusSummary,
+    ParcelReportResponse,
+    PaymentStatusSummary,
+    PaymentReportResponse,
+    DeliveryAgentWorkload,
+    DeliveryReportResponse,
+    MonthlyReportResponse
+)
 
 __all__ = [
     "UserRole",
@@ -66,5 +75,12 @@ __all__ = [
     "PaymentStatus",
     "PaymentUpdate",
     "PaymentCreate",
-    "PaymentResponse"
+    "PaymentResponse",
+    "ParcelStatusSummary",
+    "ParcelReportResponse",
+    "PaymentStatusSummary",
+    "PaymentReportResponse",
+    "DeliveryAgentWorkload",
+    "DeliveryReportResponse",
+    "MonthlyReportResponse"
 ]
