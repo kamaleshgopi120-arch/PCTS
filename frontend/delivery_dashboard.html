@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delivery Agent Portal — PCTS Field Operations</title>
+  <meta name="description" content="Delivery agent task workspace for managing assigned courier routes, updating checkpoint status, and marking successful deliveries.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <!-- Navigation Header -->
+  <header>
+    <nav class="navbar" aria-label="Main Navigation">
+      <a href="index.html" class="nav-brand" id="brandLink">
+        <div class="brand-icon">🚚</div>
+        <span class="brand-title">PCTS Express &bull; Field Operations</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="delivery_dashboard.html" class="nav-link active" id="navDeliveryHome">My Tasks</a></li>
+        <li><a href="track.html" class="nav-link" id="navTrack">Search Tracking</a></li>
+      </ul>
+
+      <div class="nav-auth">
+        <span style="font-size: 0.85rem; color: var(--text-secondary);">Agent: <strong id="agentHeaderName" style="color: #ffffff;">Ravi Kumar</strong></span>
+        <a href="login.html" class="btn btn-outline btn-sm" id="logoutBtn">Logout</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- Agent Profile Card -->
+    <section class="card" id="agentProfileCard" style="margin-bottom: 2rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 1.25rem;">
+          <div style="width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-emerald) 0%, var(--primary) 100%); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; color: #ffffff;">
+            🛵
+          </div>
+          <div>
+            <h1 style="font-size: 1.6rem; margin-bottom: 0.2rem;" id="agentNameTitle">Ravi Kumar</h1>
+            <p style="font-size: 0.88rem; margin: 0;">Zone: <strong>Mumbai Central &bull; Sector 4</strong> &bull; Vehicle: <strong>MH-01-AB-1234 (Bike)</strong></p>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+          <div class="stat-card" style="padding: 0.75rem 1.25rem; min-width: 140px; margin-bottom: 0;">
+            <div class="stat-label">Pending Today</div>
+            <div class="stat-value" style="font-size: 1.4rem; color: var(--accent-amber);" id="agentPendingCount">3</div>
+          </div>
+          <div class="stat-card" style="padding: 0.75rem 1.25rem; min-width: 140px; margin-bottom: 0;">
+            <div class="stat-label">Completed</div>
+            <div class="stat-value" style="font-size: 1.4rem; color: var(--accent-emerald);" id="agentCompletedCount">8</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Task List Section -->
+    <section class="card" id="assignedTasksSection">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2>Assigned Deliveries for Today</h2>
+          <p>Scan and update parcel checkpoints as you make progress along your route.</p>
+        </div>
+
+        <div class="tabs" role="tablist" id="deliveryFilterTabs">
+          <button type="button" class="tab-btn active" id="tabActiveTasks">Active (3)</button>
+          <button type="button" class="tab-btn" id="tabCompletedTasks">Delivered (8)</button>
+        </div>
+      </div>
+
+      <!-- Task Items Table -->
+      <div class="table-responsive">
+        <table class="table" id="deliveryTasksTable">
+          <thead>
+            <tr>
+              <th scope="col">Tracking ID</th>
+              <th scope="col">Recipient Details</th>
+              <th scope="col">Delivery Address</th>
+              <th scope="col">Weight / Type</th>
+              <th scope="col">Current Status</th>
+              <th scope="col" style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="agentTasksBody">
+            <!-- Task 1 -->
+            <tr>
+              <td><strong style="color: var(--accent-cyan);">TRK7A8B9C</strong></td>
+              <td>
+                <div style="font-weight: 600;">Rohan Mehta</div>
+                <a href="tel:9820011223" style="font-size: 0.82rem; color: var(--accent-emerald); display: inline-flex; align-items: center; gap: 0.25rem;">
+                  📞 9820011223
+                </a>
+              </td>
+              <td style="max-width: 250px;">
+                Flat 402, Sea Breeze Apts, Worli Sea Face, Mumbai 400018
+              </td>
+              <td>2.5 kg &bull; Electronics</td>
+              <td>
+                <span class="badge badge-outfordelivery">
+                  <span class="badge-dot"></span>Out for Delivery
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <button 
+                  class="btn btn-primary btn-sm" 
+                  onclick="openUpdateModal('TRK7A8B9C', 'Out for Delivery', 'Worli Hub')"
+                  id="btnUpdateTRK7A8B9C"
+                >
+                  Update Status ✏️
+                </button>
+              </td>
+            </tr>
+
+            <!-- Task 2 -->
+            <tr>
+              <td><strong style="color: var(--accent-cyan);">TRK4D5E6F</strong></td>
+              <td>
+                <div style="font-weight: 600;">Deepak Joshi</div>
+                <a href="tel:9833445566" style="font-size: 0.82rem; color: var(--accent-emerald); display: inline-flex; align-items: center; gap: 0.25rem;">
+                  📞 9833445566
+                </a>
+              </td>
+              <td style="max-width: 250px;">
+                12, Nariman Point Commercial Tower, 5th Floor, Mumbai 400021
+              </td>
+              <td>5.2 kg &bull; General</td>
+              <td>
+                <span class="badge badge-intransit">
+                  <span class="badge-dot"></span>In Transit
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <button 
+                  class="btn btn-outline btn-sm" 
+                  onclick="openUpdateModal('TRK4D5E6F', 'In Transit', 'Mumbai Central')"
+                  id="btnUpdateTRK4D5E6F"
+                >
+                  Update Status ✏️
+                </button>
+              </td>
+            </tr>
+
+            <!-- Task 3 -->
+            <tr>
+              <td><strong style="color: var(--accent-cyan);">TRK2B3C4D</strong></td>
+              <td>
+                <div style="font-weight: 600;">Simran Kaur</div>
+                <a href="tel:9819283746" style="font-size: 0.82rem; color: var(--accent-emerald); display: inline-flex; align-items: center; gap: 0.25rem;">
+                  📞 9819283746
+                </a>
+              </td>
+              <td style="max-width: 250px;">
+                B/104, Green Heights, Dadar West, Mumbai 400028
+              </td>
+              <td>0.5 kg &bull; Documents</td>
+              <td>
+                <span class="badge badge-pickedup">
+                  <span class="badge-dot"></span>Picked Up
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <button 
+                  class="btn btn-outline btn-sm" 
+                  onclick="openUpdateModal('TRK2B3C4D', 'Picked Up', 'Dadar Local Office')"
+                  id="btnUpdateTRK2B3C4D"
+                >
+                  Update Status ✏️
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Update Status Checkpoint Modal -->
+  <div class="modal-backdrop" id="updateStatusModal" role="dialog" aria-modal="true" aria-labelledby="updateModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="updateModalTitle">Update Delivery Milestone</h3>
+        <button type="button" class="modal-close" onclick="closeUpdateModal()" aria-label="Close Modal">&times;</button>
+      </div>
+
+      <form id="updateCheckpointForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="updateTrackingId">Parcel Tracking ID</label>
+            <input type="text" id="updateTrackingId" class="form-control" readonly>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="newStatusSelect">New Checkpoint Status</label>
+            <select id="newStatusSelect" class="form-control" required>
+              <option value="Picked Up">Picked Up</option>
+              <option value="In Transit">In Transit</option>
+              <option value="Out for Delivery">Out for Delivery</option>
+              <option value="Delivered">Delivered (Completed)</option>
+              <option value="Failed">Delivery Attempt Failed</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="checkpointLocationInput">Current Location / Hub</label>
+            <input 
+              type="text" 
+              id="checkpointLocationInput" 
+              class="form-control" 
+              placeholder="e.g. Worli Delivery Hub or Customer Doorstep" 
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="checkpointNotesInput">Remarks / Delivery Notes</label>
+            <input 
+              type="text" 
+              id="checkpointNotesInput" 
+              class="form-control" 
+              placeholder="e.g. Handed to recipient with signature"
+            >
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeUpdateModal()">Cancel</button>
+          <button type="submit" class="btn btn-success" id="btnConfirmStatusUpdate">Submit Update 💾</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>&copy; 2026 PCTS Express Logistics Inc. All rights reserved.</p>
+  </footer>
+
+  <script>
+    function openUpdateModal(trackingId, currentStatus, defaultLocation) {
+      document.getElementById('updateTrackingId').value = trackingId;
+      document.getElementById('newStatusSelect').value = currentStatus;
+      document.getElementById('checkpointLocationInput').value = defaultLocation || '';
+      document.getElementById('updateStatusModal').classList.add('active');
+    }
+    function closeUpdateModal() {
+      document.getElementById('updateStatusModal').classList.remove('active');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — PCTS Logistics Portal</title>
+  <meta name="description" content="Sign in to your PCTS account to track shipments, book couriers, or manage logistics operations.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <!-- Navigation Header -->
+  <header>
+    <nav class="navbar" aria-label="Main Navigation">
+      <a href="index.html" class="nav-brand" id="brandLink">
+        <div class="brand-icon">📦</div>
+        <span class="brand-title">PCTS Express</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link" id="navHome">Home</a></li>
+        <li><a href="track.html" class="nav-link" id="navTrack">Track Parcel</a></li>
+        <li><a href="book_parcel.html" class="nav-link" id="navBook">Book Shipment</a></li>
+      </ul>
+
+      <div class="nav-auth">
+        <a href="register.html" class="btn btn-outline btn-sm" id="navRegisterBtn">Create Account</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Login Card Container -->
+  <main class="container" style="max-width: 480px; margin-top: 1.5rem;">
+    <div class="card" id="loginCard">
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🔐</div>
+        <h1>Welcome Back</h1>
+        <p>Access your customer, staff, or administration account</p>
+      </div>
+
+      <!-- Quick Role Preset Selector for Convenience / Demo -->
+      <div style="margin-bottom: 1.5rem; text-align: center;">
+        <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">
+          Quick Role Selector
+        </span>
+        <div class="tabs" role="tablist" id="roleSelectorTabs" style="width: 100%; justify-content: center;">
+          <button type="button" class="tab-btn active" id="roleCustomerBtn">Customer</button>
+          <button type="button" class="tab-btn" id="roleAdminBtn">Admin</button>
+          <button type="button" class="tab-btn" id="roleDeliveryBtn">Delivery Agent</button>
+        </div>
+      </div>
+
+      <!-- Notification / Error Banner -->
+      <div class="alert alert-danger" id="loginAlert" style="display: none;" role="alert">
+        <span id="loginAlertText">Invalid credentials. Please verify your email and password.</span>
+      </div>
+
+      <!-- Unified Login Form -->
+      <form id="loginForm" method="POST" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="loginEmail">Email Address</label>
+          <input 
+            type="email" 
+            id="loginEmail" 
+            name="email" 
+            class="form-control" 
+            placeholder="e.g. arjun.sharma@example.com" 
+            required 
+            autocomplete="email"
+          >
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+            <label class="form-label" for="loginPassword" style="margin-bottom: 0;">Password</label>
+            <a href="#" style="font-size: 0.8rem; color: var(--text-muted);" id="forgotPasswordLink">Forgot?</a>
+          </div>
+          <input 
+            type="password" 
+            id="loginPassword" 
+            name="password" 
+            class="form-control" 
+            placeholder="••••••••••••" 
+            required 
+            autocomplete="current-password"
+          >
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn" style="margin-top: 1.5rem;">
+          Sign In &rarr;
+        </button>
+      </form>
+
+      <div style="text-align: center; margin-top: 1.75rem; font-size: 0.9rem; color: var(--text-secondary);">
+        Don't have an account yet? 
+        <a href="register.html" style="font-weight: 600;" id="registerRedirectLink">Register as Customer</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2026 PCTS Express Logistics Inc. All rights reserved.</p>
+  </footer>
+</body>
+</html>

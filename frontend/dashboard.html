@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — PCTS Operations</title>
+  <meta name="description" content="Manage logistics network, assign delivery agents, oversee parcel transit statuses, and analyze revenue metrics.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <!-- Navigation Header -->
+  <header>
+    <nav class="navbar" aria-label="Main Navigation">
+      <a href="index.html" class="nav-brand" id="brandLink">
+        <div class="brand-icon">📦</div>
+        <span class="brand-title">PCTS Express &bull; Admin</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="dashboard.html" class="nav-link active" id="navDashboard">Dashboard</a></li>
+        <li><a href="track.html" class="nav-link" id="navTrack">Track</a></li>
+        <li><a href="book_parcel.html" class="nav-link" id="navBook">New Booking</a></li>
+        <li><a href="delivery_dashboard.html" class="nav-link" id="navDelivery">Delivery Agents</a></li>
+      </ul>
+
+      <div class="nav-auth">
+        <span style="font-size: 0.85rem; color: var(--text-secondary);">Logged as: <strong style="color: #ffffff;">Admin (HQ)</strong></span>
+        <a href="login.html" class="btn btn-outline btn-sm" id="logoutBtn">Sign Out</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- Top Action & Title Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+      <div>
+        <h1>Operations Command Center</h1>
+        <p>Live inventory, fleet distribution, and parcel status management</p>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem;">
+        <a href="book_parcel.html" class="btn btn-primary" id="btnAdminNewBooking">
+          ➕ Book Parcel
+        </a>
+        <button type="button" class="btn btn-outline" id="btnExportReport">
+          📊 Export Report
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary KPI Stat Cards -->
+    <section class="stat-grid" aria-label="System Metrics">
+      <div class="stat-card" id="cardTotalParcels">
+        <div class="stat-label">Total Shipments</div>
+        <div class="stat-value" id="valTotalParcels">1,428</div>
+        <span style="font-size: 0.8rem; color: var(--accent-emerald);">↑ 14% this week</span>
+      </div>
+
+      <div class="stat-card" id="cardActiveDeliveries">
+        <div class="stat-label">Active in Transit</div>
+        <div class="stat-value" id="valActiveDeliveries" style="color: var(--accent-amber);">312</div>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Across 8 primary hubs</span>
+      </div>
+
+      <div class="stat-card" id="cardDeliveredParcels">
+        <div class="stat-label">Successfully Delivered</div>
+        <div class="stat-value" id="valDeliveredParcels" style="color: var(--accent-emerald);">1,084</div>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">98.2% on-time fulfillment</span>
+      </div>
+
+      <div class="stat-card" id="cardTotalRevenue">
+        <div class="stat-label">Gross Revenue</div>
+        <div class="stat-value" id="valTotalRevenue" style="color: var(--accent-cyan);">₹1,84,650</div>
+        <span style="font-size: 0.8rem; color: var(--accent-emerald);">₹12,400 pending collection</span>
+      </div>
+    </section>
+
+    <!-- Parcel Management Section -->
+    <section class="card" id="parcelsTableCard">
+      <!-- Filter and Search Header -->
+      <div class="filter-bar">
+        <div class="tabs" role="tablist" id="statusFilterTabs">
+          <button type="button" class="tab-btn active" data-filter="ALL" id="tabFilterAll">All Parcels</button>
+          <button type="button" class="tab-btn" data-filter="Booked" id="tabFilterBooked">Booked</button>
+          <button type="button" class="tab-btn" data-filter="In Transit" id="tabFilterTransit">In Transit</button>
+          <button type="button" class="tab-btn" data-filter="Out for Delivery" id="tabFilterOut">Out for Delivery</button>
+          <button type="button" class="tab-btn" data-filter="Delivered" id="tabFilterDelivered">Delivered</button>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+          <input 
+            type="text" 
+            class="form-control" 
+            id="adminTableSearch" 
+            placeholder="Search by ID, name, city..." 
+            style="width: 240px; padding: 0.45rem 0.85rem;"
+          >
+          <button class="btn btn-outline btn-sm" id="btnRefreshTable">🔄 Refresh</button>
+        </div>
+      </div>
+
+      <!-- Responsive Table -->
+      <div class="table-responsive">
+        <table class="table" id="adminParcelsTable">
+          <thead>
+            <tr>
+              <th scope="col">Tracking ID</th>
+              <th scope="col">Sender</th>
+              <th scope="col">Recipient</th>
+              <th scope="col">Route</th>
+              <th scope="col">Weight</th>
+              <th scope="col">Status</th>
+              <th scope="col">Payment</th>
+              <th scope="col">Assigned Agent</th>
+              <th scope="col" style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody">
+            <!-- Row 1 -->
+            <tr>
+              <td><strong style="color: var(--accent-cyan);">TRK7A8B9C</strong></td>
+              <td>Arjun Sharma</td>
+              <td>Rohan Mehta</td>
+              <td>Mumbai &rarr; Delhi</td>
+              <td>2.5 kg</td>
+              <td><span class="badge badge-intransit"><span class="badge-dot"></span>In Transit</span></td>
+              <td><span class="badge badge-delivered">PAID</span></td>
+              <td>Ravi Kumar</td>
+              <td style="text-align: right;">
+                <button class="btn btn-outline btn-sm" onclick="openAssignModal('TRK7A8B9C')">Assign</button>
+              </td>
+            </tr>
+
+            <!-- Row 2 -->
+            <tr>
+              <td><strong style="color: var(--accent-cyan);">TRK1X2Y3Z</strong></td>
+              <td>Priya Nair</td>
+              <td>Ananya Roy</td>
+              <td>Bengaluru &rarr; Chennai</td>
+              <td>0.8 kg</td>
+              <td><span class="badge badge-booked"><span class="badge-dot"></span>Booked</span></td>
+              <td><span class="badge badge-failed">PENDING</span></td>
+              <td><em>Unassigned</em></td>
+              <td style="text-align: right;">
+                <button class="btn btn-primary btn-sm" onclick="openAssignModal('TRK1X2Y3Z')">Assign</button>
+              </td>
+            </tr>
+
+            <!-- Row 3 -->
+            <tr>
+              <td><strong style="color: var(--accent-cyan);">TRK4D5E6F</strong></td>
+              <td>Karan Verma</td>
+              <td>Deepak Joshi</td>
+              <td>Pune &rarr; Mumbai</td>
+              <td>5.2 kg</td>
+              <td><span class="badge badge-outfordelivery"><span class="badge-dot"></span>Out for Delivery</span></td>
+              <td><span class="badge badge-delivered">PAID</span></td>
+              <td>Suresh Patil</td>
+              <td style="text-align: right;">
+                <button class="btn btn-outline btn-sm" onclick="openAssignModal('TRK4D5E6F')">Assign</button>
+              </td>
+            </tr>
+
+            <!-- Row 4 -->
+            <tr>
+              <td><strong style="color: var(--accent-cyan);">TRK9K8J7H</strong></td>
+              <td>Vikram Singh</td>
+              <td>Neha Gupta</td>
+              <td>Delhi &rarr; Kolkata</td>
+              <td>1.2 kg</td>
+              <td><span class="badge badge-delivered"><span class="badge-dot"></span>Delivered</span></td>
+              <td><span class="badge badge-delivered">PAID</span></td>
+              <td>Sunil Das</td>
+              <td style="text-align: right;">
+                <a href="track.html" class="btn btn-outline btn-sm">Logs</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination / Footer Info -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+        <span>Showing 1–4 of 1,428 shipments</span>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-outline btn-sm" disabled>&larr; Previous</button>
+          <button class="btn btn-outline btn-sm">Next &rarr;</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Assign Agent Modal Dialog -->
+  <div class="modal-backdrop" id="assignModal" role="dialog" aria-modal="true" aria-labelledby="assignModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="assignModalTitle">Assign Delivery Agent</h3>
+        <button type="button" class="modal-close" onclick="closeAssignModal()" aria-label="Close Modal">&times;</button>
+      </div>
+
+      <form id="assignAgentForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="modalTrackingId">Parcel Tracking ID</label>
+            <input type="text" id="modalTrackingId" class="form-control" readonly>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="modalAgentSelect">Select Available Agent</label>
+            <select id="modalAgentSelect" class="form-control" required>
+              <option value="" disabled selected>Choose a delivery executive</option>
+              <option value="1">Ravi Kumar (Mumbai Central - Bike) &bull; 3 Active</option>
+              <option value="2">Suresh Patil (Pune Zone - Van) &bull; 1 Active</option>
+              <option value="3">Anjali Rao (Bengaluru South - EV Scooter) &bull; 0 Active</option>
+              <option value="4">Sunil Das (Delhi Hub - Bike) &bull; 2 Active</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="modalAssignNotes">Assignment Instructions (Optional)</label>
+            <input type="text" id="modalAssignNotes" class="form-control" placeholder="e.g. Priority door delivery before 4 PM">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeAssignModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnConfirmAssign">Confirm Assignment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>&copy; 2026 PCTS Express Logistics Inc. All rights reserved.</p>
+  </footer>
+
+  <script>
+    function openAssignModal(trackingId) {
+      document.getElementById('modalTrackingId').value = trackingId;
+      document.getElementById('assignModal').classList.add('active');
+    }
+    function closeAssignModal() {
+      document.getElementById('assignModal').classList.remove('active');
+    }
+  </script>
+</body>
+</html>

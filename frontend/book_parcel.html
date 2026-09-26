@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book a Shipment — PCTS Express</title>
+  <meta name="description" content="Book courier and parcel dispatches with instant weight-based rate estimates and real-time tracking generation.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <!-- Navigation Header -->
+  <header>
+    <nav class="navbar" aria-label="Main Navigation">
+      <a href="index.html" class="nav-brand" id="brandLink">
+        <div class="brand-icon">📦</div>
+        <span class="brand-title">PCTS Express</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link" id="navHome">Home</a></li>
+        <li><a href="track.html" class="nav-link" id="navTrack">Track Parcel</a></li>
+        <li><a href="book_parcel.html" class="nav-link active" id="navBook">Book Shipment</a></li>
+        <li><a href="dashboard.html" class="nav-link" id="navAdmin">Admin</a></li>
+      </ul>
+
+      <div class="nav-auth">
+        <span id="userGreeting" style="font-size: 0.88rem; color: var(--text-secondary); display: none;">Hello, <strong id="userName">User</strong></span>
+        <a href="login.html" class="btn btn-outline btn-sm" id="authBtn">Sign In</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Booking Container -->
+  <main class="container" style="max-width: 960px;">
+    <div style="margin-bottom: 2rem;">
+      <h1>Book New Shipment</h1>
+      <p>Fill in the sender, recipient, and parcel specifications to schedule dispatch</p>
+    </div>
+
+    <!-- Alert / Confirmation Card (Hidden by default) -->
+    <div class="alert alert-success" id="bookingSuccessAlert" style="display: none;" role="alert">
+      <div>
+        <strong>Shipment Booked Successfully!</strong> Your tracking ID is: 
+        <a href="track.html" id="successTrackingIdLink" style="font-weight: 700; text-decoration: underline; margin-left: 0.5rem; color: #ffffff;"></a>
+      </div>
+    </div>
+
+    <form id="parcelBookingForm" method="POST" novalidate>
+      <div style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 2rem; align-items: start;">
+        
+        <!-- Left Column: Form Fields -->
+        <div style="display: flex; flex-direction: column; gap: 1.75rem;">
+          
+          <!-- Sender Details Card -->
+          <div class="card" id="senderSection">
+            <h3 style="margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span>📤</span> 1. Sender Information
+            </h3>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="senderName">Sender Name</label>
+                <input type="text" id="senderName" name="senderName" class="form-control" placeholder="Full name" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="senderPhone">Sender Phone</label>
+                <input type="tel" id="senderPhone" name="senderPhone" class="form-control" placeholder="10-digit number" maxlength="10" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="sourceCity">Origin City</label>
+              <select id="sourceCity" name="sourceCity" class="form-control" required>
+                <option value="" disabled selected>Select Origin City</option>
+                <option value="Mumbai">Mumbai</option>
+                <option value="Delhi">Delhi</option>
+                <option value="Bengaluru">Bengaluru</option>
+                <option value="Chennai">Chennai</option>
+                <option value="Kolkata">Kolkata</option>
+                <option value="Pune">Pune</option>
+                <option value="Hyderabad">Hyderabad</option>
+                <option value="Ahmedabad">Ahmedabad</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Receiver Details Card -->
+          <div class="card" id="receiverSection">
+            <h3 style="margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span>📥</span> 2. Recipient Information
+            </h3>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="receiverName">Recipient Name</label>
+                <input type="text" id="receiverName" name="receiverName" class="form-control" placeholder="Full name" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="receiverPhone">Recipient Phone</label>
+                <input type="tel" id="receiverPhone" name="receiverPhone" class="form-control" placeholder="10-digit number" maxlength="10" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="destCity">Destination City</label>
+              <select id="destCity" name="destCity" class="form-control" required>
+                <option value="" disabled selected>Select Destination City</option>
+                <option value="Mumbai">Mumbai</option>
+                <option value="Delhi">Delhi</option>
+                <option value="Bengaluru">Bengaluru</option>
+                <option value="Chennai">Chennai</option>
+                <option value="Kolkata">Kolkata</option>
+                <option value="Pune">Pune</option>
+                <option value="Hyderabad">Hyderabad</option>
+                <option value="Ahmedabad">Ahmedabad</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="receiverAddress">Delivery Address</label>
+              <textarea id="receiverAddress" name="receiverAddress" class="form-control" rows="2" placeholder="House/Flat, Landmark, Road, Pincode" required></textarea>
+            </div>
+          </div>
+
+          <!-- Parcel Attributes Card -->
+          <div class="card" id="packageSection">
+            <h3 style="margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span>📦</span> 3. Parcel Specifications
+            </h3>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="categorySelect">Category</label>
+                <select id="categorySelect" name="category" class="form-control" required>
+                  <option value="General">General Goods</option>
+                  <option value="Documents">Documents / Letter</option>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Fragile">Fragile / Glass</option>
+                  <option value="Clothing">Apparel & Textiles</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="weightInput">Weight (in kg)</label>
+                <input type="number" id="weightInput" name="weight" class="form-control" placeholder="e.g. 2.5" min="0.1" step="0.1" value="1.0" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="parcelDescription">Package Contents & Notes</label>
+              <input type="text" id="parcelDescription" name="description" class="form-control" placeholder="e.g. University Transcripts & Certificates">
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column: Live Charge Preview & Action Sticky Card -->
+        <div style="position: sticky; top: 5.5rem;">
+          <div class="card" id="pricingSummaryCard">
+            <h3 style="margin-bottom: 1.25rem;">Rate Summary</h3>
+
+            <div style="display: flex; flex-direction: column; gap: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1.25rem; margin-bottom: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                <span style="color: var(--text-secondary);">Base Rate:</span>
+                <span id="summaryBaseRate" style="font-weight: 600;">₹50.00</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                <span style="color: var(--text-secondary);">Weight Charge:</span>
+                <span id="summaryWeightCharge" style="font-weight: 600;">₹0.00</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                <span style="color: var(--text-secondary);">Estimated Distance:</span>
+                <span id="summaryDistance" style="font-weight: 600;">Standard Regional</span>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem;">
+              <span style="font-weight: 700; font-size: 1.1rem;">Total Cost:</span>
+              <span class="gradient-text" id="summaryTotalCost" style="font-size: 2.2rem; font-weight: 800; font-family: var(--font-display);">
+                ₹50.00
+              </span>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="bookParcelSubmitBtn">
+              Confirm & Book Shipment 🚀
+            </button>
+
+            <p style="font-size: 0.8rem; text-align: center; color: var(--text-muted); margin-top: 1rem;">
+              Payment can be settled online or via Cash on Delivery (COD) upon pickup.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2026 PCTS Express Logistics Inc. All rights reserved.</p>
+  </footer>
+</body>
+</html>

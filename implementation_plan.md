@@ -399,16 +399,19 @@ DBMS laboratory component.
 
 **What you build:** HTML pages for every screen of the application.
 
-**Pages:**
-- `index.html` — Home / landing page.
-- `login.html` — Login form.
-- `register.html` — Registration form.
-- `book_parcel.html` — Parcel booking form.
-- `track.html` — Parcel tracking page.
-- `dashboard.html` — Admin dashboard.
-- `delivery_dashboard.html` — Delivery person dashboard.
+**Deliverables:**
+- [x] `frontend/css/style.css` — Master design system (glassmorphism, typography, responsive grids, timeline, modal dialogs, status badges).
+- [x] `frontend/index.html` — Home / landing page with hero tracking search bar, features grid, and pricing cards.
+- [x] `frontend/login.html` — Unified login portal with role preset selector and clean form validation states.
+- [x] `frontend/register.html` — Customer registration form with city, phone, address, and password fields.
+- [x] `frontend/book_parcel.html` — Parcel booking form with sender/receiver details and live rate calculation preview.
+- [x] `frontend/track.html` — Live tracking page with 5-stage progress wizard and MongoDB event history timeline.
+- [x] `frontend/dashboard.html` — Admin command center with KPI stat cards, parcel filtering table, and delivery assignment modal.
+- [x] `frontend/delivery_dashboard.html` — Delivery executive portal with route task table and checkpoint status update modal.
+- [x] Static files mounted on FastAPI at `/static` (`backend/main.py`).
+- [x] Automated test suite verified (`backend/test_frontend.py`).
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 

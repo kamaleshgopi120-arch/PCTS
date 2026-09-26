@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account — PCTS Express</title>
+  <meta name="description" content="Register for a customer account on PCTS to book shipments and track your packages across India.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <!-- Navigation Header -->
+  <header>
+    <nav class="navbar" aria-label="Main Navigation">
+      <a href="index.html" class="nav-brand" id="brandLink">
+        <div class="brand-icon">📦</div>
+        <span class="brand-title">PCTS Express</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link" id="navHome">Home</a></li>
+        <li><a href="track.html" class="nav-link" id="navTrack">Track Parcel</a></li>
+      </ul>
+
+      <div class="nav-auth">
+        <a href="login.html" class="btn btn-outline btn-sm" id="navLoginBtn">Sign In</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Registration Card Container -->
+  <main class="container" style="max-width: 600px; margin-top: 1.5rem;">
+    <div class="card" id="registerCard">
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">✨</div>
+        <h1>Create Customer Account</h1>
+        <p>Book parcels, schedule pickups, and track packages in real-time</p>
+      </div>
+
+      <!-- Alert Banner -->
+      <div class="alert alert-danger" id="registerAlert" style="display: none;" role="alert">
+        <span id="registerAlertText">Please check your inputs and try again.</span>
+      </div>
+
+      <!-- Registration Form -->
+      <form id="registerForm" method="POST" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="regName">Full Name</label>
+          <input 
+            type="text" 
+            id="regName" 
+            name="name" 
+            class="form-control" 
+            placeholder="e.g. Arjun Sharma" 
+            required
+            autocomplete="name"
+          >
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="regEmail">Email Address</label>
+            <input 
+              type="email" 
+              id="regEmail" 
+              name="email" 
+              class="form-control" 
+              placeholder="arjun.sharma@example.com" 
+              required
+              autocomplete="email"
+            >
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="regPhone">Phone Number</label>
+            <input 
+              type="tel" 
+              id="regPhone" 
+              name="phone" 
+              class="form-control" 
+              placeholder="9876543210" 
+              maxlength="10" 
+              pattern="[0-9]{10}"
+              required
+              autocomplete="tel"
+            >
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="regCity">City</label>
+            <select id="regCity" name="city" class="form-control" required>
+              <option value="" disabled selected>Select Your City</option>
+              <option value="Mumbai">Mumbai</option>
+              <option value="Delhi">Delhi</option>
+              <option value="Bengaluru">Bengaluru</option>
+              <option value="Chennai">Chennai</option>
+              <option value="Kolkata">Kolkata</option>
+              <option value="Pune">Pune</option>
+              <option value="Hyderabad">Hyderabad</option>
+              <option value="Ahmedabad">Ahmedabad</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="regPincode">Pincode</label>
+            <input 
+              type="text" 
+              id="regPincode" 
+              name="pincode" 
+              class="form-control" 
+              placeholder="e.g. 400001" 
+              maxlength="6"
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regAddress">Address</label>
+          <textarea 
+            id="regAddress" 
+            name="address" 
+            class="form-control" 
+            rows="2" 
+            placeholder="Flat / Building, Street, Area" 
+            required
+          ></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="regPassword">Password</label>
+            <input 
+              type="password" 
+              id="regPassword" 
+              name="password" 
+              class="form-control" 
+              placeholder="At least 6 characters" 
+              required
+              autocomplete="new-password"
+            >
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="regConfirmPassword">Confirm Password</label>
+            <input 
+              type="password" 
+              id="regConfirmPassword" 
+              name="confirmPassword" 
+              class="form-control" 
+              placeholder="Re-enter password" 
+              required
+              autocomplete="new-password"
+            >
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="registerSubmitBtn" style="margin-top: 1.25rem;">
+          Register Account &rarr;
+        </button>
+      </form>
+
+      <div style="text-align: center; margin-top: 1.75rem; font-size: 0.9rem; color: var(--text-secondary);">
+        Already have an account? 
+        <a href="login.html" style="font-weight: 600;" id="loginRedirectLink">Sign In</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2026 PCTS Express Logistics Inc. All rights reserved.</p>
+  </footer>
+</body>
+</html>

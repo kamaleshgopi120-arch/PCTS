@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Parcel Tracking — PCTS Express</title>
+  <meta name="description" content="Track your package status in real-time with step-by-step progress and granular MongoDB event timeline logs.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <!-- Navigation Header -->
+  <header>
+    <nav class="navbar" aria-label="Main Navigation">
+      <a href="index.html" class="nav-brand" id="brandLink">
+        <div class="brand-icon">📦</div>
+        <span class="brand-title">PCTS Express</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link" id="navHome">Home</a></li>
+        <li><a href="track.html" class="nav-link active" id="navTrack">Track Parcel</a></li>
+        <li><a href="book_parcel.html" class="nav-link" id="navBook">Book Shipment</a></li>
+        <li><a href="dashboard.html" class="nav-link" id="navAdmin">Admin</a></li>
+        <li><a href="delivery_dashboard.html" class="nav-link" id="navDelivery">Delivery Portal</a></li>
+      </ul>
+
+      <div class="nav-auth">
+        <a href="login.html" class="btn btn-outline btn-sm" id="navLoginBtn">Sign In</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container" style="max-width: 900px;">
+    <!-- Page Header and Search Input -->
+    <div style="text-align: center; margin-bottom: 2.5rem;">
+      <h1>Live Shipment Tracking</h1>
+      <p>Enter your unique 8-character Tracking ID to trace your parcel's journey</p>
+
+      <form id="trackSearchForm" class="search-box" style="margin-top: 1.5rem;" role="search">
+        <input 
+          type="text" 
+          id="trackSearchInput" 
+          name="id" 
+          placeholder="e.g. TRK7A8B9C or parcel UUID" 
+          required 
+          autocomplete="off"
+          aria-label="Tracking ID Search"
+        >
+        <button type="submit" class="btn btn-primary" id="trackSearchBtn">
+          🔍 Track
+        </button>
+      </form>
+    </div>
+
+    <!-- Feedback Alerts -->
+    <div class="alert alert-danger" id="trackErrorAlert" style="display: none;" role="alert">
+      <span id="trackErrorMessage">No parcel found with the specified Tracking ID. Please double check the ID.</span>
+    </div>
+
+    <!-- Main Results Section (Visible when tracking details loaded) -->
+    <div id="trackingResultContainer">
+      
+      <!-- Top Overview Card -->
+      <section class="card" id="trackingOverviewCard" style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1.25rem;">
+          <div>
+            <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Tracking Number</span>
+            <h2 id="displayTrackingId" style="font-family: var(--font-display); letter-spacing: 0.05em; color: var(--accent-cyan);">TRK7A8B9C</h2>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Current Status</span>
+            <div id="displayStatusBadge" class="badge badge-intransit">
+              <span class="badge-dot"></span>
+              <span id="statusBadgeText">In Transit</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key Route Metadata Grid -->
+        <div class="detail-grid" style="margin-top: 1.5rem;">
+          <div class="detail-item">
+            <div class="detail-label">Origin</div>
+            <div class="detail-val" id="displayOrigin">Mumbai</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Destination</div>
+            <div class="detail-val" id="displayDestination">Delhi</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Current Checkpoint</div>
+            <div class="detail-val" id="displayLocation">Ahmedabad Hub</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Weight & Category</div>
+            <div class="detail-val" id="displayWeightCategory">2.5 kg &bull; Electronics</div>
+          </div>
+        </div>
+
+        <!-- Step-by-Step Horizontal Progress Bar -->
+        <div class="step-wizard" id="stepWizard" aria-label="Delivery Progress Steps">
+          <div class="step-item completed" id="stepBooked">
+            <div class="step-circle">1</div>
+            <div class="step-label">Booked</div>
+          </div>
+          <div class="step-item completed" id="stepPickedUp">
+            <div class="step-circle">2</div>
+            <div class="step-label">Picked Up</div>
+          </div>
+          <div class="step-item current" id="stepInTransit">
+            <div class="step-circle">3</div>
+            <div class="step-label">In Transit</div>
+          </div>
+          <div class="step-item" id="stepOutForDelivery">
+            <div class="step-circle">4</div>
+            <div class="step-label">Out for Delivery</div>
+          </div>
+          <div class="step-item" id="stepDelivered">
+            <div class="step-circle">5</div>
+            <div class="step-label">Delivered</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Chronological Checkpoint Logs (MongoDB Audit Events) -->
+      <section class="card" id="timelineSection">
+        <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <span>📋</span> Checkpoint History & Event Logs
+        </h3>
+        <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+          Immutable audit events captured in real-time by PCTS distributed hubs.
+        </p>
+
+        <div class="timeline" id="trackingTimeline">
+          <!-- Sample timeline items for initial render / demo -->
+          <div class="timeline-item active">
+            <div class="timeline-dot"></div>
+            <div class="timeline-title">Arrived at Transit Sorting Hub</div>
+            <div class="timeline-meta">Ahmedabad Sort Facility &bull; Today, 10:45 AM</div>
+            <div class="timeline-notes">Package scanned into inter-city container dispatch for Northern sector.</div>
+          </div>
+
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-title">Departed Origin Facility</div>
+            <div class="timeline-meta">Mumbai Central Warehouse &bull; Yesterday, 08:30 PM</div>
+            <div class="timeline-notes">Dispatched via logistics carrier truck MH-04-AB-1234.</div>
+          </div>
+
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-title">Package Picked Up</div>
+            <div class="timeline-meta">Bandra West, Mumbai &bull; Yesterday, 03:15 PM</div>
+            <div class="timeline-notes">Collected by delivery executive Ravi Kumar.</div>
+          </div>
+
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-title">Shipment Order Created</div>
+            <div class="timeline-meta">Online Booking &bull; Yesterday, 11:20 AM</div>
+            <div class="timeline-notes">Tracking ID generated and assigned to sender Arjun Sharma.</div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2026 PCTS Express Logistics Inc. All rights reserved.</p>
+  </footer>
+</body>
+</html>
