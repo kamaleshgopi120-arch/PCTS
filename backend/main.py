@@ -155,6 +155,14 @@ from backend.routers.parcels import router as parcels_router
 app.include_router(parcels_router)
 
 
+# -----------------------------------------------------------------------------
+# PHASE 13: PUBLIC PARCEL TRACKING ROUTER
+# -----------------------------------------------------------------------------
+from backend.routers.tracking import router as tracking_router
+
+app.include_router(tracking_router)
+
+
 # =============================================================================
 # PHASE 8: PYDANTIC SCHEMA VALIDATION DEMONSTRATION ENDPOINTS
 # =============================================================================

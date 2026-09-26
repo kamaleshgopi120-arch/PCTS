@@ -111,3 +111,20 @@ class ParcelResponse(ParcelBase):
     payment_amount: Optional[float] = Field(default=None, description="Total amount due / paid")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TrackingResponse(BaseModel):
+    """Public tracking response schema."""
+    tracking_id: str = Field(..., description="Unique Tracking ID")
+    status: str = Field(..., description="Current status (e.g. Booked, In Transit, Delivered)")
+    location: Optional[str] = Field(None, description="Latest known hub/location")
+    source_city: str = Field(..., description="Origin city")
+    destination_city: str = Field(..., description="Destination city")
+    receiver_name: str = Field(..., description="Receiver name")
+    weight_kg: float = Field(..., description="Weight in kg")
+    booked_at: datetime = Field(..., description="Booking timestamp")
+    last_updated: datetime = Field(..., description="Timestamp of last status change")
+    is_delivered: bool = Field(default=False, description="True if parcel has been delivered")
+    delivered_at: Optional[datetime] = Field(default=None, description="Delivery completion timestamp")
+
+    model_config = ConfigDict(from_attributes=True)

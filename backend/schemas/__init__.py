@@ -20,6 +20,7 @@ from .parcel import (
     ParcelCreate,
     ParcelStatusUpdate,
     ParcelResponse,
+    TrackingResponse,
     calculate_shipping_charge
 )
 
@@ -38,5 +39,6 @@ __all__ = [
     "ParcelCreate",
     "ParcelStatusUpdate",
     "ParcelResponse",
+    "TrackingResponse",
     "calculate_shipping_charge"
 ]

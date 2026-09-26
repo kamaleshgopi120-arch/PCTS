@@ -303,10 +303,16 @@ DBMS laboratory component.
 **What you build:** Status update and tracking endpoints.
 
 **Endpoints:**
-- `GET /api/track/{tracking_id}` — public tracking endpoint.
-- `PUT /api/parcels/{id}/status` — update parcel status (admin/delivery).
+- `GET /api/track/{tracking_id}` — public tracking endpoint (no auth required, normalizes whitespace & uppercase, EC-18, 19, 20).
+- `PUT /api/parcels/{id}/status` — update parcel status (admin/delivery staff only).
 
-**Status:** 🔲 Not Started
+**Deliverables:**
+- [x] Public tracking endpoint working (`GET /api/track/{tracking_id}`).
+- [x] Status update endpoint working (`PUT /api/parcels/{id}/status`, restricted to admin/delivery).
+- [x] Database trigger `trg_after_status_update` verified recording audit rows in MySQL.
+- [x] Automated test suite verified (`backend/test_tracking.py`).
+
+**Status:** ✅ Complete
 
 ---
 
@@ -471,7 +477,7 @@ DBMS laboratory component.
 | 10    | User Authentication API         | ✅ Complete     |
 | 11    | Customer Management API         | ✅ Complete     |
 | 12    | Parcel Booking API              | ✅ Complete     |
-| 13    | Parcel Status and Tracking API  | 🔲 Not Started |
+| 13    | Parcel Status and Tracking API  | ✅ Complete     |
 | 14    | MongoDB Integration             | 🔲 Not Started |
 | 15    | Delivery Management API         | 🔲 Not Started |
 | 16    | Payment Management API          | 🔲 Not Started |

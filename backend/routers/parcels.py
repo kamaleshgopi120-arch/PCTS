@@ -20,10 +20,11 @@ from backend.models.parcel_status import ParcelStatus
 from backend.models.payment import Payment
 from backend.schemas.parcel import (
     ParcelCreate,
+    ParcelStatusUpdate,
     ParcelResponse,
     calculate_shipping_charge
 )
-from backend.security import get_current_user
+from backend.security import get_current_user, require_staff
 
 router = APIRouter(prefix="/api/parcels", tags=["Parcel Booking & Management"])
 
@@ -266,5 +267,57 @@ def get_parcel(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access forbidden: You can only view your own parcels."
             )
+
+    return build_parcel_response(parcel)
+
+
+# -----------------------------------------------------------------------------
+# 4. UPDATE PARCEL STATUS (Staff / Admin Only)
+# -----------------------------------------------------------------------------
+@router.put(
+    "/{parcel_id}/status",
+    response_model=ParcelResponse,
+    summary="Update parcel status and current location (Staff/Admin only)",
+    dependencies=[Depends(require_staff)]
+)
+def update_parcel_status_endpoint(
+    parcel_id: int,
+    status_update: ParcelStatusUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Updates status and current location of a parcel:
+    - Restricted to Admin and Delivery staff.
+    - Updates `parcel_status` in MySQL, which automatically FIRES the
+      `trg_after_status_update` database trigger and logs into `parcel_status_audit`!
+    - When new status is 'Delivered', automatically records `delivery.delivered_at = NOW()`.
+    """
+    parcel = db.scalar(select(Parcel).where(Parcel.parcel_id == parcel_id))
+    if not parcel:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Parcel not found."
+        )
+
+    if not parcel.status:
+        status_rec = ParcelStatus(
+            parcel_id=parcel.parcel_id,
+            status=status_update.status,
+            location=status_update.location,
+            updated_at=datetime.now()
+        )
+        db.add(status_rec)
+    else:
+        parcel.status.status = status_update.status
+        parcel.status.location = status_update.location
+        parcel.status.updated_at = datetime.now()
+
+    # If delivered, record delivery timestamp
+    if status_update.status.strip().title() == "Delivered":
+        if parcel.delivery and parcel.delivery.delivered_at is None:
+            parcel.delivery.delivered_at = datetime.now()
+
+    db.commit()
+    db.refresh(parcel)
 
     return build_parcel_response(parcel)
