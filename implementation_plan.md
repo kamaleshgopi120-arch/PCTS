@@ -419,13 +419,17 @@ DBMS laboratory component.
 
 **Goal:** Connect the HTML pages to the FastAPI backend.
 
-**What you learn:**
-- `fetch()` API in JavaScript.
-- Sending GET and POST requests from the browser.
-- Displaying API response data in the HTML.
-- Storing JWT token in `localStorage`.
+**Deliverables:**
+- [x] `frontend/js/api.js` — Shared API client wrapper, JWT token storage, navbar auth state sync, and rate calculator.
+- [x] `frontend/js/auth.js` — Unified login portal, quick role presets, and customer registration with auto-login.
+- [x] `frontend/js/book_parcel.js` — Real-time shipping charge calculator, profile auto-fill, and shipment booking submission.
+- [x] `frontend/js/track.js` — URL query parameter lookup, status badge rendering, 5-stage progress wizard, and MongoDB history timeline.
+- [x] `frontend/js/dashboard.js` — Admin KPI statistics, tabbed status filters, real-time parcel search, and delivery agent assignment modal.
+- [x] `frontend/js/delivery.js` — Delivery agent workspace, active/delivered task tabs, and checkpoint status update modal.
+- [x] All 7 HTML pages updated with modular `<script>` tags linking API client and page logic.
+- [x] Automated test suite verified (`backend/test_frontend_js.py`).
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
