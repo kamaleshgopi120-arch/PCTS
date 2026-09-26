@@ -192,10 +192,11 @@ DBMS laboratory component.
 - Viewing auto-generated docs at `http://127.0.0.1:8000/docs`.
 
 **Deliverables:**
-- [ ] `backend/main.py` created with a basic "Hello, PCTS!" endpoint.
-- [ ] App runs locally without errors.
+- [x] `backend/main.py` created with a basic "Hello, PCTS!" endpoint.
+- [x] App runs locally without errors (`backend/test_app.py` passes).
+- [x] Interactive OpenAPI docs accessible at `/docs` and `/redoc`.
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -451,7 +452,7 @@ DBMS laboratory component.
 | 4     | Python Fundamentals             | ✅ Complete     |
 | 5     | MySQL Setup and Raw SQL         | ✅ Complete     |
 | 6     | PL/SQL Components               | ✅ Complete     |
-| 7     | FastAPI Introduction            | 🔲 Not Started |
+| 7     | FastAPI Introduction            | ✅ Complete     |
 | 8     | Pydantic Validation             | 🔲 Not Started |
 | 9     | SQLAlchemy and Models           | 🔲 Not Started |
 | 10    | User Authentication API         | 🔲 Not Started |

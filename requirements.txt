@@ -45,3 +45,6 @@ python-dotenv==1.1.0         # Load .env file variables into Python
 
 # --- Form Data Support ---
 python-multipart==0.0.20     # Required by FastAPI to receive form data
+
+# --- Testing / HTTP Client ---
+httpx==0.28.1                # Required for FastAPI TestClient and HTTP requests
