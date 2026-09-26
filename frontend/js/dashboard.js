@@ -85,8 +85,9 @@ async function loadKPIStats() {
       if (deliveredEl) deliveredEl.textContent = deliveredCount.toLocaleString();
     }
 
-    if (totalRevenueEl && paymentReport.total_revenue !== undefined) {
-      totalRevenueEl.textContent = formatCurrency(paymentReport.total_revenue);
+    const grossRev = paymentReport.collected_amount ?? paymentReport.total_amount ?? paymentReport.total_revenue ?? 0;
+    if (totalRevenueEl) {
+      totalRevenueEl.textContent = formatCurrency(grossRev);
     }
 
   } catch (err) {

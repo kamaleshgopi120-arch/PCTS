@@ -134,7 +134,7 @@ def test_list_parcels(cust1_token, cust2_token, admin_token):
     print(f">> 2.2 Customer 2 sees {len(c2_parcels)} parcels (all customer_id == 2)")
 
     # 2.3 Admin lists parcels (Sees all parcels across system)
-    res_admin = client.get("/api/parcels", headers=admin_headers)
+    res_admin = client.get("/api/parcels?limit=100", headers=admin_headers)
     assert res_admin.status_code == 200
     all_parcels = res_admin.json()
     assert len(all_parcels) >= len(c1_parcels) + len(c2_parcels)
