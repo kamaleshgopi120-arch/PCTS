@@ -437,16 +437,18 @@ DBMS laboratory component.
 
 **Goal:** Add indexes to improve query performance for commonly searched fields.
 
-**What you learn:**
-- What a database index is and how it works.
-- When to add an index (fields used in WHERE clauses frequently).
+**Deliverables:**
+- [x] `sql/05_indexes.sql` — Idempotent stored procedure script creating B-Tree indexes across all core tables.
+- [x] `parcel(tracking_id)` (`idx_parcel_tracking_id`) — $O(\log N)$ public parcel tracking.
+- [x] `user(email)` (`idx_user_email`) — Accelerated authentication lookups.
+- [x] `payment(parcel_id)` (`idx_payment_parcel_id`) and `payment(payment_status)` — High-speed relational joins and revenue analytics.
+- [x] `delivery(delivery_person_id, assigned_at)` (`idx_delivery_agent_assigned`) — Compound index for delivery agent task queues avoiding disk filesorts.
+- [x] `parcel_status(status)` (`idx_parcel_status_status`) — Fast status filter tab rendering.
+- [x] `backend/mongo.py` (`ensure_mongo_indexes`) — MongoDB compound index `{ tracking_id: 1, timestamp: -1 }` for sorted timeline retrieval.
+- [x] SQLAlchemy ORM models updated with `index=True` declarations.
+- [x] Automated test suite verified (`backend/test_indexes.py`) with `EXPLAIN` query execution plans.
 
-**Indexes to add:**
-- `parcel.tracking_id` — searched frequently.
-- `customer.email` — searched on login.
-- `payment.parcel_id` — joined frequently.
-
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 

@@ -16,7 +16,7 @@ class ParcelStatus(Base):
 
     status_id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     parcel_id = Column(Integer, ForeignKey("parcel.parcel_id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
-    status = Column(String(30), nullable=False)
+    status = Column(String(30), nullable=False, index=True)
     location = Column(String(100), nullable=True)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 

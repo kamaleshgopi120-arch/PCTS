@@ -81,18 +81,57 @@ def set_mock_client(mock_client: Optional[Any] = None) -> None:
         _mock_client = None
 
 
+_indexes_initialized = False
+
+def ensure_mongo_indexes() -> bool:
+    """
+    Creates compound and single-field indexes on MongoDB collection:
+    - { tracking_id: 1, timestamp: -1 }: Enables O(log N) sorted retrieval of timeline logs.
+    - { status: 1 }: Fast status-based milestone querying.
+    """
+    db = get_mongo_db()
+    if db is None:
+        return False
+    try:
+        col = db[COLLECTION_NAME]
+        col.create_index(
+            [("tracking_id", pymongo.ASCENDING), ("timestamp", pymongo.DESCENDING)],
+            name="idx_tracking_time"
+        )
+        col.create_index([("status", pymongo.ASCENDING)], name="idx_status")
+        return True
+    except Exception as exc:
+        logger.warning("Failed to create MongoDB indexes: %s", exc)
+        return False
+
+
 def get_mongo_db():
     """
     Get the PCTS database instance from MongoDB, or None if unavailable.
+    Automatically initializes collection indexes on first connection.
     """
+    global _indexes_initialized
     client = get_mongo_client()
     if client is None:
         return None
     try:
-        return client[MONGO_DB_NAME]
+        db = client[MONGO_DB_NAME]
+        if not _indexes_initialized:
+            try:
+                col = db[COLLECTION_NAME]
+                col.create_index(
+                    [("tracking_id", pymongo.ASCENDING), ("timestamp", pymongo.DESCENDING)],
+                    name="idx_tracking_time"
+                )
+                col.create_index([("status", pymongo.ASCENDING)], name="idx_status")
+                _indexes_initialized = True
+            except Exception:
+                pass
+        return db
     except Exception as exc:
         logger.error("Could not access MongoDB database '%s': %s", MONGO_DB_NAME, exc)
         return None
+
 
 
 def is_mongo_connected() -> bool:

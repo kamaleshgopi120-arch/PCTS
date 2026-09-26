@@ -21,7 +21,8 @@ class Payment(Base):
     payment_status = Column(
         SQLEnum("Pending", "Paid", "Failed", name="payment_status_enum"),
         nullable=False,
-        default="Pending"
+        default="Pending",
+        index=True
     )
     paid_at = Column(DateTime, nullable=True)
 
