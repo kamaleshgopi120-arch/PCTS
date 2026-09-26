@@ -32,6 +32,7 @@ cryptography==44.0.3         # Required by pymysql for secure connections
 
 # --- MongoDB Driver ---
 pymongo==4.12.1              # Connects Python to MongoDB
+mongomock==4.3.0             # In-memory mock MongoDB for testing and offline development
 
 # --- Password Hashing & Security ---
 bcrypt==4.3.0                # Cryptographic hashing for passwords

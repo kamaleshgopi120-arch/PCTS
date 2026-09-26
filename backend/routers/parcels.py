@@ -25,6 +25,7 @@ from backend.schemas.parcel import (
     calculate_shipping_charge
 )
 from backend.security import get_current_user, require_staff
+from backend.mongo import log_tracking_event
 
 router = APIRouter(prefix="/api/parcels", tags=["Parcel Booking & Management"])
 
@@ -176,6 +177,15 @@ def book_parcel(
         db.commit()
         db.refresh(new_parcel)
 
+        # Step D: Log initial milestone to MongoDB (NoSQL Event Store)
+        log_tracking_event(
+            tracking_id=new_parcel.tracking_id,
+            status="Booked",
+            location=f"{parcel_in.source_city} Central Booking Office",
+            updated_by=current_user.email,
+            notes="Parcel booked and shipment initiated."
+        )
+
         return build_parcel_response(new_parcel)
 
     except Exception as e:
@@ -277,12 +287,12 @@ def get_parcel(
 @router.put(
     "/{parcel_id}/status",
     response_model=ParcelResponse,
-    summary="Update parcel status and current location (Staff/Admin only)",
-    dependencies=[Depends(require_staff)]
+    summary="Update parcel status and current location (Staff/Admin only)"
 )
 def update_parcel_status_endpoint(
     parcel_id: int,
     status_update: ParcelStatusUpdate,
+    current_user: User = Depends(require_staff),
     db: Session = Depends(get_db)
 ):
     """
@@ -291,6 +301,7 @@ def update_parcel_status_endpoint(
     - Updates `parcel_status` in MySQL, which automatically FIRES the
       `trg_after_status_update` database trigger and logs into `parcel_status_audit`!
     - When new status is 'Delivered', automatically records `delivery.delivered_at = NOW()`.
+    - Logs an append-only timeline event in MongoDB `tracking_history` collection.
     """
     parcel = db.scalar(select(Parcel).where(Parcel.parcel_id == parcel_id))
     if not parcel:
@@ -319,5 +330,14 @@ def update_parcel_status_endpoint(
 
     db.commit()
     db.refresh(parcel)
+
+    # Log milestone event into MongoDB
+    log_tracking_event(
+        tracking_id=parcel.tracking_id,
+        status=status_update.status,
+        location=status_update.location,
+        updated_by=current_user.email,
+        notes=status_update.notes
+    )
 
     return build_parcel_response(parcel)

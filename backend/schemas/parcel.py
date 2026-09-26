@@ -8,7 +8,7 @@ Parcel Booking, Tracking, and Charge Calculation Validation Schemas
 import re
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
 
@@ -96,6 +96,19 @@ class ParcelStatusUpdate(BaseModel):
     """Schema for updating the status and current location of a parcel."""
     status: str = Field(..., min_length=2, max_length=30, description="e.g., In Transit, Out for Delivery, Delivered")
     location: str = Field(..., min_length=2, max_length=100, description="Physical hub/city location")
+    notes: Optional[str] = Field(default=None, max_length=255, description="Optional remarks for tracking history")
+
+
+class TrackingHistoryEvent(BaseModel):
+    """Schema for a single historical milestone/event from MongoDB."""
+    event_id: Optional[str] = Field(default=None, description="MongoDB document ID")
+    status: str = Field(..., description="Status at this milestone")
+    location: str = Field(..., description="Location of parcel during this event")
+    updated_by: str = Field(..., description="Username of operator who updated status")
+    timestamp: datetime = Field(..., description="Timestamp of the status change")
+    notes: Optional[str] = Field(default=None, description="Optional milestone notes")
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ParcelResponse(ParcelBase):
@@ -126,5 +139,7 @@ class TrackingResponse(BaseModel):
     last_updated: datetime = Field(..., description="Timestamp of last status change")
     is_delivered: bool = Field(default=False, description="True if parcel has been delivered")
     delivered_at: Optional[datetime] = Field(default=None, description="Delivery completion timestamp")
+    history: List[TrackingHistoryEvent] = Field(default_factory=list, description="Chronological timeline of events from MongoDB")
+    warning: Optional[str] = Field(default=None, description="Notice if MongoDB history is temporarily unavailable (EC-21)")
 
     model_config = ConfigDict(from_attributes=True)

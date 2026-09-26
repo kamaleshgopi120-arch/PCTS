@@ -326,11 +326,13 @@ DBMS laboratory component.
 - Querying documents by `tracking_id`.
 
 **Deliverables:**
-- [ ] `backend/mongo.py` — MongoDB connection.
-- [ ] Tracking event saved to MongoDB every time a status is updated.
-- [ ] Tracking endpoint returns history from MongoDB.
+- [x] `backend/mongo.py` — MongoDB connection and tracking event operations.
+- [x] Tracking event saved to MongoDB every time a parcel is booked and when status is updated.
+- [x] Tracking endpoint returns history timeline from MongoDB.
+- [x] Fault tolerance: Graceful fallback with warning when MongoDB is offline (EC-21 & EC-35).
+- [x] Automated test suite verified (`backend/test_mongo.py`).
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -478,7 +480,7 @@ DBMS laboratory component.
 | 11    | Customer Management API         | ✅ Complete     |
 | 12    | Parcel Booking API              | ✅ Complete     |
 | 13    | Parcel Status and Tracking API  | ✅ Complete     |
-| 14    | MongoDB Integration             | 🔲 Not Started |
+| 14    | MongoDB Integration             | ✅ Complete     |
 | 15    | Delivery Management API         | 🔲 Not Started |
 | 16    | Payment Management API          | 🔲 Not Started |
 | 17    | Reports API                     | 🔲 Not Started |

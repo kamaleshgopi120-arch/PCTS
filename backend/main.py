@@ -124,10 +124,14 @@ def database_health_check(db: Session = Depends(get_db)):
     and successfully query the MySQL database.
     """
     result = db.execute(text("SELECT 1 AS alive")).scalar()
+    from backend.mongo import is_mongo_connected
+    mongo_status = "connected" if is_mongo_connected() else "offline"
     return {
         "database": "MySQL 8.0",
         "status": "connected" if result == 1 else "unresponsive",
-        "orm": "SQLAlchemy 2.0"
+        "orm": "SQLAlchemy 2.0",
+        "nosql_database": "MongoDB",
+        "nosql_status": mongo_status
     }
 
 
