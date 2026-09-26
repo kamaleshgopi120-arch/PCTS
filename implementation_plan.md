@@ -57,12 +57,12 @@ Each phase focuses on learning one thing and building one part of the system.
 - [ ] `requirements.md` — completed.
 - [ ] `context.md` — completed.
 - [ ] `architecture.md` — completed.
-- [ ] `databaseDesign.md` — completed.
-- [ ] `edge_case.md` — completed.
-- [ ] `implementation_plan.md` — this file.
-- [ ] `README.md` — completed.
+- [x] `databaseDesign.md` — completed.
+- [x] `edge_case.md` — completed.
+- [x] `implementation_plan.md` — this file.
+- [x] `README.md` — completed.
 
-**Status:** ✅ In Progress
+**Status:** ✅ Complete
 
 ---
 
@@ -84,7 +84,7 @@ Each phase focuses on learning one thing and building one part of the system.
 
 **Tools to use:** draw.io (free, runs in browser at draw.io), or pen and paper scanned.
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -106,7 +106,7 @@ Each phase focuses on learning one thing and building one part of the system.
 - [x] First commit made — 18 files, 2300 insertions.
 - [ ] GitHub repository created and remote pushed. *(Do manually — see README)*
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -125,11 +125,11 @@ Each phase focuses on learning one thing and building one part of the system.
 - Virtual environments (`venv`).
 
 **Deliverables:**
-- [ ] Python virtual environment (`venv`) created for the project.
-- [ ] `requirements.txt` file created with initial packages.
-- [ ] Small Python practice scripts written (optional).
+- [x] Python virtual environment (`venv`) created for the project.
+- [x] `requirements.txt` file created with initial packages.
+- [x] Small Python practice scripts written (`python_basics/01-07`).
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -145,12 +145,14 @@ Each phase focuses on learning one thing and building one part of the system.
 - Joins between tables.
 
 **Deliverables:**
-- [ ] MySQL installed and running.
-- [ ] Database `pcts_db` created.
-- [ ] All tables from `databaseDesign.md` created using raw SQL.
-- [ ] Sample data inserted manually to test the structure.
+- [x] MySQL installed and running (MySQL 8.0.46).
+- [x] Database `pcts_db` created.
+- [x] All tables from `databaseDesign.md` created using raw SQL (`sql/01_create_tables.sql`).
+- [x] Sample data inserted manually to test the structure (`sql/02_sample_data.sql`).
+- [x] SQL laboratory queries tested (`sql/03_basic_queries.sql`).
+- [x] Python raw connection script verified (`python_basics/08_mysql_raw.py`).
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -442,11 +444,11 @@ DBMS laboratory component.
 
 | Phase | Name                            | Status         |
 |-------|---------------------------------|----------------|
-| 1     | Documentation and Design        | ✅ In Progress |
+| 1     | Documentation and Design        | ✅ Complete     |
 | 2     | UML and ER Diagrams             | ✅ Complete     |
-| 3     | Git and GitHub Setup            | ✅ Complete    |
-| 4     | Python Fundamentals             | 🔲 Not Started |
-| 5     | MySQL Setup and Raw SQL         | 🔲 Not Started |
+| 3     | Git and GitHub Setup            | ✅ Complete     |
+| 4     | Python Fundamentals             | ✅ Complete     |
+| 5     | MySQL Setup and Raw SQL         | ✅ Complete     |
 | 6     | PL/SQL Components               | 🔲 Not Started |
 | 7     | FastAPI Introduction            | 🔲 Not Started |
 | 8     | Pydantic Validation             | 🔲 Not Started |
