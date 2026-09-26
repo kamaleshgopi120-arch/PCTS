@@ -168,14 +168,15 @@ DBMS laboratory component.
 - How to call stored procedures from Python.
 
 **Deliverables:**
-- [ ] `sql/procedures.sql` file created.
-- [ ] `calculate_charge` function implemented.
-- [ ] `update_parcel_status` procedure implemented.
-- [ ] `trg_after_status_update` trigger implemented.
-- [ ] `get_monthly_report` procedure implemented.
-- [ ] All PL/SQL components tested in MySQL Workbench or MySQL CLI.
+- [x] `sql/procedures.sql` file created.
+- [x] `calculate_charge` function implemented.
+- [x] `update_parcel_status` procedure implemented.
+- [x] `trg_after_status_update` trigger implemented.
+- [x] `get_monthly_report` procedure implemented.
+- [x] All PL/SQL components tested in MySQL Workbench or MySQL CLI.
+- [x] Python script `python_basics/09_plsql_procedures.py` verified.
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -449,7 +450,7 @@ DBMS laboratory component.
 | 3     | Git and GitHub Setup            | ✅ Complete     |
 | 4     | Python Fundamentals             | ✅ Complete     |
 | 5     | MySQL Setup and Raw SQL         | ✅ Complete     |
-| 6     | PL/SQL Components               | 🔲 Not Started |
+| 6     | PL/SQL Components               | ✅ Complete     |
 | 7     | FastAPI Introduction            | 🔲 Not Started |
 | 8     | Pydantic Validation             | 🔲 Not Started |
 | 9     | SQLAlchemy and Models           | 🔲 Not Started |
