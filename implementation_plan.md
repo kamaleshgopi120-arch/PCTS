@@ -231,11 +231,12 @@ DBMS laboratory component.
 - CRUD operations using SQLAlchemy (add, query, update, delete).
 
 **Deliverables:**
-- [ ] `backend/database.py` — database connection setup.
-- [ ] `backend/models/` — all table models created as Python classes.
-- [ ] Basic CRUD operations tested.
+- [x] `backend/database.py` — database connection setup (engine, SessionLocal, Base, get_db).
+- [x] `backend/models/` — all 7 table models created with foreign keys and relationships.
+- [x] Basic CRUD and multi-table object graph traversal tested (`backend/test_database.py`).
+- [x] Live database health endpoint `/db-health` added with `Depends(get_db)`.
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -455,7 +456,7 @@ DBMS laboratory component.
 | 6     | PL/SQL Components               | ✅ Complete     |
 | 7     | FastAPI Introduction            | ✅ Complete     |
 | 8     | Pydantic Validation             | ✅ Complete     |
-| 9     | SQLAlchemy and Models           | 🔲 Not Started |
+| 9     | SQLAlchemy and Models           | ✅ Complete     |
 | 10    | User Authentication API         | 🔲 Not Started |
 | 11    | Customer Management API         | 🔲 Not Started |
 | 12    | Parcel Booking API              | 🔲 Not Started |

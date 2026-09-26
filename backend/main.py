@@ -21,8 +21,11 @@ How to run this server:
 """
 
 from datetime import datetime
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from backend.database import get_db
 
 # -----------------------------------------------------------------------------
 # Initialize the FastAPI Application
@@ -104,6 +107,27 @@ def system_info():
             "validation": "Pydantic v2"
         },
         "authors": "PCTS Development Team"
+    }
+
+
+# -----------------------------------------------------------------------------
+# ENDPOINT 4: Database Health & Connectivity Check (Phase 9)
+# -----------------------------------------------------------------------------
+@app.get(
+    "/db-health",
+    summary="Database Connectivity Check",
+    tags=["System"]
+)
+def database_health_check(db: Session = Depends(get_db)):
+    """
+    Verifies that FastAPI can acquire a connection from the SQLAlchemy pool
+    and successfully query the MySQL database.
+    """
+    result = db.execute(text("SELECT 1 AS alive")).scalar()
+    return {
+        "database": "MySQL 8.0",
+        "status": "connected" if result == 1 else "unresponsive",
+        "orm": "SQLAlchemy 2.0"
     }
 
 
