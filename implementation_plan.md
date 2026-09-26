@@ -383,12 +383,15 @@ DBMS laboratory component.
 
 **Goal:** Ensure the API handles all edge cases from `edge_case.md` gracefully.
 
-**What you learn:**
-- FastAPI exception handlers.
-- Custom `HTTPException` responses.
-- Database transaction rollback on failure.
+**Deliverables:**
+- [x] Global exception handlers in `backend/exceptions.py` registered on FastAPI application.
+- [x] Pydantic validation errors formatted clearly (EC-39, EC-40, EC-41, EC-42).
+- [x] Database integrity errors handled cleanly with friendly messages (EC-36, EC-37).
+- [x] Database operational/connection outages return clean HTTP 503 (EC-34).
+- [x] Atomic multi-table transaction rollback verified (EC-38).
+- [x] Automated test suite verified (`backend/test_exceptions.py`).
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -489,7 +492,7 @@ DBMS laboratory component.
 | 15    | Delivery Management API         | ✅ Complete     |
 | 16    | Payment Management API          | ✅ Complete     |
 | 17    | Reports API                     | ✅ Complete     |
-| 18    | Exception Handling              | 🔲 Not Started |
+| 18    | Exception Handling              | ✅ Complete     |
 | 19    | Frontend: Static Pages          | 🔲 Not Started |
 | 20    | Frontend: JS Integration        | 🔲 Not Started |
 | 21    | Database Indexing               | 🔲 Not Started |

@@ -42,6 +42,13 @@ app = FastAPI(
     redoc_url="/redoc"     # Alternative clean ReDoc documentation URL
 )
 
+# -----------------------------------------------------------------------------
+# PHASE 18: GLOBAL EXCEPTION & EDGE CASE HANDLERS
+# -----------------------------------------------------------------------------
+from backend.exceptions import register_exception_handlers
+
+register_exception_handlers(app)
+
 
 # -----------------------------------------------------------------------------
 # ENDPOINT 1: Root / Welcome Endpoint
