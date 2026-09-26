@@ -147,6 +147,14 @@ from backend.routers.customers import router as customers_router
 app.include_router(customers_router)
 
 
+# -----------------------------------------------------------------------------
+# PHASE 12: PARCEL BOOKING & MANAGEMENT ROUTER
+# -----------------------------------------------------------------------------
+from backend.routers.parcels import router as parcels_router
+
+app.include_router(parcels_router)
+
+
 # =============================================================================
 # PHASE 8: PYDANTIC SCHEMA VALIDATION DEMONSTRATION ENDPOINTS
 # =============================================================================

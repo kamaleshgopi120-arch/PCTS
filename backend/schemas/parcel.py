@@ -80,8 +80,16 @@ class ParcelBase(BaseModel):
 
 
 class ParcelCreate(ParcelBase):
-    """Schema for booking a new parcel shipment."""
-    customer_id: int = Field(..., gt=0, description="ID of booking customer")
+    """
+    Schema for booking a new parcel shipment.
+    `customer_id` is optional in the payload because it is automatically resolved
+    from the logged-in customer's JWT token (or provided explicitly by admins).
+    """
+    customer_id: Optional[int] = Field(
+        default=None,
+        gt=0,
+        description="Customer ID (inferred from JWT token for customers; required for admins)"
+    )
 
 
 class ParcelStatusUpdate(BaseModel):
@@ -99,5 +107,7 @@ class ParcelResponse(ParcelBase):
     booked_at: datetime = Field(..., description="Timestamp when booking was confirmed")
     status: Optional[str] = Field(default="Booked", description="Current delivery status")
     location: Optional[str] = Field(default=None, description="Current physical location")
+    payment_status: Optional[str] = Field(default="Pending", description="Payment settlement status")
+    payment_amount: Optional[float] = Field(default=None, description="Total amount due / paid")
 
     model_config = ConfigDict(from_attributes=True)

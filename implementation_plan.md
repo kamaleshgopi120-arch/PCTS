@@ -286,12 +286,15 @@ DBMS laboratory component.
 
 **Endpoint:** `POST /api/parcels`
 
-**What you learn:**
-- Generating a unique Tracking ID (format: `PCTS-YYYYMMDD-XXXX`).
-- Calculating delivery charges using the charge table.
-- Atomic transactions (parcel + payment created together).
+**Deliverables:**
+- [x] Tracking ID generator implemented with collision resistance (format: `PCTS-YYYYMMDD-XXXX`, EC-16).
+- [x] Delivery charge calculation logic matching official weight tiers.
+- [x] `POST /api/parcels` endpoint working with atomic transactions (`parcel` + `parcel_status` + `payment`).
+- [x] `GET /api/parcels` endpoint working (role-filtered: customer sees own, admin sees all, with filtering & pagination).
+- [x] `GET /api/parcels/{id}` endpoint working with owner access control.
+- [x] Automated test suite verified (`backend/test_parcels.py`).
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -467,7 +470,7 @@ DBMS laboratory component.
 | 9     | SQLAlchemy and Models           | ✅ Complete     |
 | 10    | User Authentication API         | ✅ Complete     |
 | 11    | Customer Management API         | ✅ Complete     |
-| 12    | Parcel Booking API              | 🔲 Not Started |
+| 12    | Parcel Booking API              | ✅ Complete     |
 | 13    | Parcel Status and Tracking API  | 🔲 Not Started |
 | 14    | MongoDB Integration             | 🔲 Not Started |
 | 15    | Delivery Management API         | 🔲 Not Started |
