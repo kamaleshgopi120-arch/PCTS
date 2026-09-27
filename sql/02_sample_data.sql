@@ -32,10 +32,10 @@ ALTER TABLE payment AUTO_INCREMENT = 1;
 -- hash them using passlib/bcrypt in Python.
 -- ============================================================================
 INSERT INTO user (user_id, email, password_hash, role) VALUES
-(1, 'admin@pcts.com', '$2b$12$e8Y5t1F9G2qXvNq7Y2J...dummy_admin_hash', 'admin'),
-(2, 'arun.kumar@gmail.com', '$2b$12$k2J4m9N8b7V6c5X...dummy_cust1_hash', 'customer'),
-(3, 'priya.sharma@yahoo.com', '$2b$12$p9Q8w7E6r5T4y3U...dummy_cust2_hash', 'customer'),
-(4, 'ravi.delivery@pcts.com', '$2b$12$z1X2c3V4b5N6m7L...dummy_deliv_hash', 'delivery');
+(1, 'admin@pcts.com', '$2b$12$JsjFyi3fAYV2rWbUulSlgeDgeiHK8YDVkj02cpmHkEy3pTDV5It1.', 'admin'),
+(2, 'arun.kumar@gmail.com', '$2b$12$LxTSuBeDYUZ4mINzLKAfGuyOp5CUCSKdo1vwmYjYVg6vKJqRxXkgW', 'customer'),
+(3, 'priya.sharma@yahoo.com', '$2b$12$Rz28iA7Akv0CloVr3rtAOu7enbiw3s6whNpfHB5vK9dzfkQ/xK/ry', 'customer'),
+(4, 'ravi.delivery@pcts.com', '$2b$12$BYQoQrYpfh.ZzWBF7PrQUuyZxRN.YIR1t0Yp57xX3yfuvgLT1Ewn6', 'delivery');
 
 -- ============================================================================
 -- 2. INSERT INTO `customer`
