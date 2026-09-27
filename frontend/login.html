@@ -45,9 +45,9 @@
           Quick Role Selector
         </span>
         <div class="tabs" role="tablist" id="roleSelectorTabs" style="width: 100%; justify-content: center;">
-          <button type="button" class="tab-btn active" id="roleCustomerBtn">Customer</button>
-          <button type="button" class="tab-btn" id="roleAdminBtn">Admin</button>
-          <button type="button" class="tab-btn" id="roleDeliveryBtn">Delivery Agent</button>
+          <button type="button" class="tab-btn active" id="roleCustomerBtn" onclick="selectRole('customer')">Customer</button>
+          <button type="button" class="tab-btn" id="roleAdminBtn" onclick="selectRole('admin')">Admin</button>
+          <button type="button" class="tab-btn" id="roleDeliveryBtn" onclick="selectRole('delivery')">Delivery Agent</button>
         </div>
       </div>
 
@@ -65,7 +65,8 @@
             id="loginEmail" 
             name="email" 
             class="form-control" 
-            placeholder="e.g. arjun.sharma@example.com" 
+            placeholder="e.g. arun.kumar@gmail.com" 
+            value="arun.kumar@gmail.com"
             required 
             autocomplete="email"
           >
@@ -82,6 +83,7 @@
             name="password" 
             class="form-control" 
             placeholder="••••••••••••" 
+            value="Customer@12345"
             required 
             autocomplete="current-password"
           >

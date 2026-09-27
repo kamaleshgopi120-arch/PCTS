@@ -20,52 +20,59 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /**
+ * Select a predefined demo role and populate login form
+ * @param {"customer" | "admin" | "delivery"} role 
+ */
+function selectRole(role) {
+  const emailInput = document.getElementById("loginEmail");
+  const passwordInput = document.getElementById("loginPassword");
+  const roleCustomerBtn = document.getElementById("roleCustomerBtn");
+  const roleAdminBtn = document.getElementById("roleAdminBtn");
+  const roleDeliveryBtn = document.getElementById("roleDeliveryBtn");
+
+  const tabs = [roleCustomerBtn, roleAdminBtn, roleDeliveryBtn].filter(Boolean);
+  tabs.forEach(btn => btn.classList.remove("active"));
+
+  if (typeof hideAlert === "function") {
+    hideAlert("loginAlert");
+  }
+
+  if (role === "admin") {
+    if (roleAdminBtn) roleAdminBtn.classList.add("active");
+    if (emailInput) emailInput.value = "admin@pcts.com";
+    if (passwordInput) passwordInput.value = "Admin@12345";
+  } else if (role === "delivery") {
+    if (roleDeliveryBtn) roleDeliveryBtn.classList.add("active");
+    if (emailInput) emailInput.value = "ravi.delivery@pcts.com";
+    if (passwordInput) passwordInput.value = "Delivery@12345";
+  } else {
+    // Default to Customer
+    if (roleCustomerBtn) roleCustomerBtn.classList.add("active");
+    if (emailInput) emailInput.value = "arun.kumar@gmail.com";
+    if (passwordInput) passwordInput.value = "Customer@12345";
+  }
+}
+window.selectRole = selectRole;
+
+/**
  * Initialize unified Login screen interactions & submissions
  */
 function initLoginPage() {
   const emailInput = document.getElementById("loginEmail");
   const passwordInput = document.getElementById("loginPassword");
   const submitBtn = document.getElementById("loginSubmitBtn");
-  const loginAlert = "loginAlert";
-
-  // Role preset selector buttons
   const roleCustomerBtn = document.getElementById("roleCustomerBtn");
   const roleAdminBtn = document.getElementById("roleAdminBtn");
   const roleDeliveryBtn = document.getElementById("roleDeliveryBtn");
-  const roleTabs = [roleCustomerBtn, roleAdminBtn, roleDeliveryBtn].filter(Boolean);
+  const loginAlert = "loginAlert";
 
-  function setActiveTab(activeBtn) {
-    roleTabs.forEach(btn => btn.classList.remove("active"));
-    if (activeBtn) activeBtn.classList.add("active");
-  }
+  // Preset button click listeners
+  if (roleCustomerBtn) roleCustomerBtn.addEventListener("click", () => selectRole("customer"));
+  if (roleAdminBtn) roleAdminBtn.addEventListener("click", () => selectRole("admin"));
+  if (roleDeliveryBtn) roleDeliveryBtn.addEventListener("click", () => selectRole("delivery"));
 
-  // Preset credentials for easy testing & grading
-  if (roleCustomerBtn) {
-    roleCustomerBtn.addEventListener("click", () => {
-      setActiveTab(roleCustomerBtn);
-      emailInput.value = "arun.kumar@gmail.com";
-      passwordInput.value = "Customer@12345";
-      hideAlert(loginAlert);
-    });
-  }
-
-  if (roleAdminBtn) {
-    roleAdminBtn.addEventListener("click", () => {
-      setActiveTab(roleAdminBtn);
-      emailInput.value = "admin@pcts.com";
-      passwordInput.value = "Admin@12345";
-      hideAlert(loginAlert);
-    });
-  }
-
-  if (roleDeliveryBtn) {
-    roleDeliveryBtn.addEventListener("click", () => {
-      setActiveTab(roleDeliveryBtn);
-      emailInput.value = "ravi.delivery@pcts.com";
-      passwordInput.value = "Delivery@12345";
-      hideAlert(loginAlert);
-    });
-  }
+  // Ensure Customer credentials are pre-filled on initial page load
+  selectRole("customer");
 
   // Handle Login Submission
   const loginForm = document.getElementById("loginForm");
