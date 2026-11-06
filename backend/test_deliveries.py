@@ -59,6 +59,7 @@ def book_test_parcel(auth_headers: dict) -> tuple[int, str]:
         "sender_phone": "9876543210",
         "receiver_name": "Test Receiver",
         "receiver_phone": "9123456780",
+        "receiver_address": "42 Test Street",
         "source_city": "Chennai",
         "destination_city": "Coimbatore",
         "parcel_type": "General",
@@ -95,7 +96,10 @@ def run_tests():
     print(f">> 1.2 Customer Access: HTTP {res2.status_code} (Forbidden)")
     assert res2.status_code == 403
 
-    # 1.3 Staff / Admin accessing agent roster -> 200 OK
+    res_delivery = client.get("/api/deliveries/agents", headers=auth_deliv)
+    assert res_delivery.status_code == 403
+
+    # 1.3 Admin accessing agent roster -> 200 OK
     res3 = client.get("/api/deliveries/agents", headers=auth_admin)
     print(f">> 1.3 Admin Access: HTTP {res3.status_code}")
     assert res3.status_code == 200
@@ -136,8 +140,19 @@ def run_tests():
     assert res_assign.status_code == 201
     assigned_data = res_assign.json()
     delivery_id = assigned_data["delivery_id"]
-    assert assigned_data["status"] == "Picked Up"
+    assert assigned_data["status"] == "Booked"
     print(f"    Assignment ID: #{delivery_id} | Agent: {assigned_data['delivery_person_name']} | Status: {assigned_data['status']}")
+
+    # Assignment alone does not mean the driver physically picked up the parcel.
+    unassigned_pid, _ = book_test_parcel(auth_cust)
+    res_unassigned_status = client.put(
+        f"/api/parcels/{unassigned_pid}/status",
+        json={"status": "Picked Up", "location": "Chennai"},
+        headers=auth_deliv
+    )
+    assert res_unassigned_status.status_code == 403
+    res_unassigned_read = client.get(f"/api/parcels/{unassigned_pid}", headers=auth_deliv)
+    assert res_unassigned_read.status_code == 403
 
     # 2.5 EC-26: Re-assigning the same parcel -> 400 Bad Request
     res_ec26 = client.post("/api/deliveries", json=assign_payload, headers=auth_admin)
@@ -146,8 +161,8 @@ def run_tests():
     assert "already assigned" in res_ec26.json()["detail"].lower()
 
     # 2.6 EC-27: Assigning an already delivered parcel -> 400 Bad Request
-    # Parcel #1 in sample data is Delivered
-    res_ec27 = client.post("/api/deliveries", json={"parcel_id": 1, "delivery_person_id": deliv_agent_id}, headers=auth_admin)
+    # Parcel #4 in sample data is Delivered.
+    res_ec27 = client.post("/api/deliveries", json={"parcel_id": 4, "delivery_person_id": deliv_agent_id}, headers=auth_admin)
     print(f">> 2.6 Delivered Parcel Assignment (EC-27): HTTP {res_ec27.status_code} (Rejected: {res_ec27.json()['detail']})")
     assert res_ec27.status_code == 400
     assert "delivered" in res_ec27.json()["detail"].lower()
@@ -194,17 +209,26 @@ def run_tests():
     print(f">> 4.1 Invalid Status Name (EC-22): HTTP {res_ec22.status_code} (Rejected)")
     assert res_ec22.status_code in (400, 422)
 
-    # 4.2 EC-24: Invalid status transition (e.g. Picked Up -> Returned directly)
+    # 4.2 EC-24: Invalid status transition (Booked -> In Transit)
     res_ec24 = client.put(
         f"/api/deliveries/{delivery_id}/status",
-        json={"status": "Returned", "location": "Hub"},
+        json={"status": "In Transit", "location": "Hub"},
         headers=auth_deliv
     )
     print(f">> 4.2 Invalid State Transition (EC-24): HTTP {res_ec24.status_code} (Rejected: {res_ec24.json()['detail']})")
     assert res_ec24.status_code == 400
     assert "invalid status transition" in res_ec24.json()["detail"].lower()
 
-    # 4.3 Valid transition: Picked Up -> In Transit
+    # 4.3 Valid transition: Booked -> Picked Up
+    res_t0 = client.put(
+        f"/api/deliveries/{delivery_id}/status",
+        json={"status": "Picked Up", "location": "Chennai Sender Address"},
+        headers=auth_deliv
+    )
+    assert res_t0.status_code == 200
+    assert res_t0.json()["status"] == "Picked Up"
+
+    # 4.4 Valid transition: Picked Up -> In Transit
     res_t1 = client.put(
         f"/api/deliveries/{delivery_id}/status",
         json={"status": "In Transit", "location": "Salem Highway Checkpoint", "notes": "On express van"},
@@ -214,7 +238,15 @@ def run_tests():
     assert res_t1.status_code == 200
     assert res_t1.json()["status"] == "In Transit"
 
-    # 4.4 Valid transition: In Transit -> Out for Delivery
+    # 4.5 Valid transition: In Transit -> At Warehouse
+    res_t2 = client.put(
+        f"/api/deliveries/{delivery_id}/status",
+        json={"status": "At Warehouse", "location": "Coimbatore Sorting Facility"},
+        headers=auth_deliv
+    )
+    assert res_t2.status_code == 200
+
+    # 4.6 Valid transition: At Warehouse -> Out for Delivery
     res_t2 = client.put(
         f"/api/deliveries/{delivery_id}/status",
         json={"status": "Out for Delivery", "location": "Coimbatore Local Hub", "notes": "Loaded for doorstep delivery"},
@@ -224,7 +256,7 @@ def run_tests():
     assert res_t2.status_code == 200
     assert res_t2.json()["status"] == "Out for Delivery"
 
-    # 4.5 Valid transition: Out for Delivery -> Delivered
+    # 4.7 Valid transition: Out for Delivery -> Delivered
     res_t3 = client.put(
         f"/api/deliveries/{delivery_id}/status",
         json={"status": "Delivered", "location": "Coimbatore Recipient Doorstep", "notes": "Delivered and verified"},
@@ -237,7 +269,7 @@ def run_tests():
     assert deliv_record["delivered_at"] is not None
     print(f"    Delivered Timestamp: {deliv_record['delivered_at']}")
 
-    # 4.6 EC-23: Cannot update status of a delivered parcel
+    # 4.8 EC-23: Cannot update status of a delivered parcel
     res_ec23 = client.put(
         f"/api/deliveries/{delivery_id}/status",
         json={"status": "In Transit", "location": "Anywhere"},
@@ -266,7 +298,7 @@ def run_tests():
         print(f">> MySQL Trigger logged {len(audit_rows)} audit rows for parcel #{pid}:")
         for row in audit_rows:
             print(f"    * '{row[0]}' -> '{row[1]}' at '{row[2]}'")
-        assert len(audit_rows) >= 3, "Expected at least 3 audit entries from status transitions"
+        assert len(audit_rows) >= 5, "Expected audit entries for each sequential status transition"
     finally:
         db.close()
 
@@ -276,7 +308,7 @@ def run_tests():
     print(f">> MongoDB logged {len(mongo_events)} chronological milestones for {tid}:")
     for ev in mongo_events:
         print(f"    -> [{ev['status']}] {ev['location']} | Notes: {ev['notes']}")
-    assert len(mongo_events) >= 4, "Expected at least 4 MongoDB milestones (Booked, Picked Up, In Transit, Out for Delivery, Delivered)"
+    assert len(mongo_events) >= 6, "Expected MongoDB milestones for booking and sequential delivery status transitions"
 
     # Verify Public Tracking returns full route
     res_pub = client.get(f"/api/track/{tid}")

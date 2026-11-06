@@ -161,8 +161,13 @@ function initRegisterPage() {
       return;
     }
 
-    if (password.length < 6) {
-      showAlert(regAlert, "Password must be at least 6 characters long.");
+    if (fullName.length < 2) {
+      showAlert(regAlert, "Full name must be at least 2 characters.");
+      return;
+    }
+
+    if (password.length < 8) {
+      showAlert(regAlert, "Password must be at least 8 characters long.");
       return;
     }
 
@@ -171,8 +176,8 @@ function initRegisterPage() {
       return;
     }
 
-    if (!/^\d{10}$/.test(phone)) {
-      showAlert(regAlert, "Phone number must be exactly 10 digits.");
+    if (!/^\+?[0-9]{10,14}$/.test(phone)) {
+      showAlert(regAlert, "Phone number must be 10 to 14 digits (digits only, optional + prefix).");
       return;
     }
 

@@ -8,6 +8,16 @@
 let myDeliveries = [];
 let showCompleted = false;
 let activeDeliveryId = null;
+const DELIVERY_STATUS_TRANSITIONS = {
+  "Booked": ["Picked Up"],
+  "Picked Up": ["In Transit"],
+  "In Transit": ["At Warehouse"],
+  "At Warehouse": ["Out for Delivery"],
+  "Out for Delivery": ["Delivered", "Failed Delivery"],
+  "Failed Delivery": ["Returned"],
+  "Delivered": [],
+  "Returned": []
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   initDeliveryPortal();
@@ -75,7 +85,7 @@ async function loadMyTasks() {
 
     myDeliveries.forEach(d => {
       const s = (d.status || "").toLowerCase();
-      if (s.includes("delivered")) {
+      if (s === "delivered" || s === "returned") {
         completedCount++;
       } else {
         pendingCount++;
@@ -90,7 +100,7 @@ async function loadMyTasks() {
     if (pendingEl) pendingEl.textContent = pendingCount;
     if (completedEl) completedEl.textContent = completedCount;
     if (tabActiveEl) tabActiveEl.textContent = `Active (${pendingCount})`;
-    if (tabCompEl) tabCompEl.textContent = `Delivered (${completedCount})`;
+    if (tabCompEl) tabCompEl.textContent = `Completed (${completedCount})`;
 
     renderTasksTable();
 
@@ -113,8 +123,8 @@ function renderTasksTable() {
   if (!tbody) return;
 
   const filtered = myDeliveries.filter(d => {
-    const isDelivered = (d.status || "").toLowerCase().includes("delivered");
-    return showCompleted ? isDelivered : !isDelivered;
+    const isCompleted = ["delivered", "returned"].includes((d.status || "").toLowerCase());
+    return showCompleted ? isCompleted : !isCompleted;
   });
 
   if (filtered.length === 0) {
@@ -130,11 +140,20 @@ function renderTasksTable() {
 
   tbody.innerHTML = filtered.map(d => {
     const statusBadge = getStatusBadgeHtml(d.status);
-    const weight = `${d.weight_kg || 1.0} kg`;
-    const isDelivered = (d.status || "").toLowerCase().includes("delivered");
+    const weight = `${d.weight_kg ?? 0} kg`;
+    const isCompleted = ["delivered", "returned"].includes((d.status || "").toLowerCase());
     const safeReceiver = escapeHtml(d.receiver_name || 'Customer');
     const safePhone = escapeHtml(d.receiver_phone || '');
-    const safeAddress = escapeHtml(d.destination_city || 'Destination Hub');
+    const safeAddress = escapeHtml(
+      d.receiver_address
+        ? `${d.receiver_address}, ${d.destination_city}`
+        : d.destination_city || 'Destination Hub'
+    );
+    const isPaid = (d.payment_status || "").toLowerCase() === "paid";
+    const payAmount = d.payment_amount ?? 50;
+    const payBadge = isPaid
+      ? `<span class="badge badge-delivered" style="font-size: 0.78rem;">PAID ✓</span>`
+      : `<span class="badge badge-failed" style="font-size: 0.78rem;">COLLECT ${formatCurrency(payAmount)} COD</span>`;
 
     return `
       <tr>
@@ -155,12 +174,13 @@ function renderTasksTable() {
         </td>
         <td style="max-width: 250px;">${safeAddress}</td>
         <td>${weight}</td>
+        <td>${payBadge}</td>
         <td>${statusBadge}</td>
         <td style="text-align: right;">
           ${
-            isDelivered
-              ? `<span style="color: var(--accent-emerald); font-size: 0.85rem; font-weight: 600;">Delivered ✔</span>`
-              : `<button class="btn btn-primary btn-sm" onclick="openUpdateModal(${d.delivery_id}, '${d.tracking_id}', '${d.status}', '${d.location || ''}')">
+            isCompleted
+              ? `<span style="color: var(--accent-emerald); font-size: 0.85rem; font-weight: 600;">Completed ✔</span>`
+              : `<button class="btn btn-primary btn-sm" data-delivery-id="${d.delivery_id}" data-tracking-id="${escapeHtml(d.tracking_id)}" data-status="${escapeHtml(d.status)}" data-location="${escapeHtml(d.location || '')}">
                    Update Status ✏️
                  </button>`
           }
@@ -168,6 +188,17 @@ function renderTasksTable() {
       </tr>
     `;
   }).join("");
+
+  tbody.querySelectorAll("[data-delivery-id]").forEach(button => {
+    button.addEventListener("click", () => {
+      window.openUpdateModal(
+        Number(button.dataset.deliveryId),
+        button.dataset.trackingId,
+        button.dataset.status,
+        button.dataset.location
+      );
+    });
+  });
 }
 
 /**
@@ -259,7 +290,21 @@ window.openUpdateModal = function(deliveryId, trackingId, currentStatus, default
   const locEl = document.getElementById("checkpointLocationInput");
 
   if (trackingEl) trackingEl.value = trackingId;
-  if (statusEl && currentStatus) statusEl.value = currentStatus;
+
+  if (statusEl) {
+    const nextStatuses = DELIVERY_STATUS_TRANSITIONS[currentStatus] || [];
+    statusEl.replaceChildren(...nextStatuses.map(nextStatus => {
+      const option = document.createElement("option");
+      option.value = nextStatus;
+      option.textContent = nextStatus;
+      return option;
+    }));
+    statusEl.disabled = nextStatuses.length === 0;
+    if (nextStatuses.length > 0) {
+      statusEl.value = nextStatuses[0];
+    }
+  }
+
   if (locEl) locEl.value = defaultLocation || "";
 
   const modal = document.getElementById("updateStatusModal");
@@ -275,11 +320,13 @@ window.closeUpdateModal = function() {
 function getStatusBadgeHtml(status) {
   const s = (status || "").toLowerCase();
   let badgeClass = "badge-booked";
-  if (s.includes("delivered")) badgeClass = "badge-delivered";
-  else if (s.includes("out for delivery")) badgeClass = "badge-outfordelivery";
-  else if (s.includes("transit")) badgeClass = "badge-intransit";
-  else if (s.includes("picked")) badgeClass = "badge-pickedup";
-  else if (s.includes("failed")) badgeClass = "badge-failed";
+  if (s === "delivered") badgeClass = "badge-delivered";
+  else if (s === "out for delivery") badgeClass = "badge-outfordelivery";
+  else if (s === "in transit") badgeClass = "badge-intransit";
+  else if (s === "picked up") badgeClass = "badge-pickedup";
+  else if (s === "failed delivery") badgeClass = "badge-failed";
+  else if (s === "at warehouse") badgeClass = "badge-intransit";
+  else if (s === "returned") badgeClass = "badge-failed";
 
   return `<span class="badge ${badgeClass}"><span class="badge-dot"></span>${escapeHtml(status || 'Booked')}</span>`;
 }

@@ -61,6 +61,7 @@
 
     <!-- Main Results Section (Visible when tracking details loaded) -->
     <div id="trackingResultContainer">
+      <div class="alert alert-warning" id="trackingHistoryWarning" style="display: none;" role="alert"></div>
       
       <!-- Top Overview Card -->
       <section class="card" id="trackingOverviewCard" style="margin-bottom: 2rem;">
@@ -123,6 +124,28 @@
         </div>
       </section>
 
+      <!-- Payment & Billing Information Card -->
+      <section class="card" id="paymentStatusCard" style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Payment Details</span>
+            <div style="display: flex; align-items: baseline; gap: 0.75rem; margin-top: 0.25rem;">
+              <h3 id="displayPaymentAmount" style="color: var(--accent-emerald); font-size: 1.5rem; margin-bottom: 0;">₹50.00</h3>
+              <span id="displayPaymentMethod" style="font-size: 0.9rem; color: var(--text-secondary);">via Cash on Delivery</span>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div id="displayPaymentBadge" class="badge badge-failed">
+              <span class="badge-dot"></span>
+              <span id="paymentBadgeText">PENDING</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" id="btnPayOnlineModal" style="display: none;" onclick="openTrackPayModal()">
+              💳 Pay Online Now
+            </button>
+          </div>
+        </div>
+      </section>
+
       <!-- Chronological Checkpoint Logs (MongoDB Audit Events) -->
       <section class="card" id="timelineSection">
         <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
@@ -166,6 +189,51 @@
 
     </div>
   </main>
+
+  <!-- Online Payment Modal Dialog -->
+  <div class="modal-backdrop" id="trackPayModal" role="dialog" aria-modal="true" aria-labelledby="trackPayTitle">
+    <div class="modal-content" style="max-width: 460px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="trackPayTitle">Pay Delivery Charge</h3>
+        <button type="button" class="modal-close" onclick="closeTrackPayModal()" aria-label="Close Modal">&times;</button>
+      </div>
+      <form id="trackPayForm">
+        <div class="modal-body">
+          <div style="text-align: center; margin-bottom: 1.25rem;">
+            <span style="font-size: 0.85rem; color: var(--text-secondary);">Total Outstanding Bill</span>
+            <div id="modalPayAmountDisplay" style="font-size: 2.2rem; font-weight: 800; color: var(--accent-emerald);">₹50.00</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="trackPayMethodSelect">Select Payment Method</label>
+            <select id="trackPayMethodSelect" class="form-control" required onchange="toggleTrackPayOption(this.value)">
+              <option value="UPI">Instant UPI (GPay / PhonePe / Paytm)</option>
+              <option value="Card">Credit / Debit Card</option>
+              <option value="Net Banking">Net Banking</option>
+            </select>
+          </div>
+
+          <div id="trackUpiBox" class="form-group">
+            <label class="form-label" for="trackUpiId">UPI VPA</label>
+            <input type="text" id="trackUpiId" class="form-control" placeholder="yourname@upi" value="customer@okhdfcbank">
+          </div>
+
+          <div id="trackCardBox" class="form-group" style="display: none;">
+            <label class="form-label" for="trackCardNumber">Card Number</label>
+            <input type="text" id="trackCardNumber" class="form-control" placeholder="4532 •••• •••• 8892" value="4532 8812 3421 9901">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem;">
+              <input type="text" class="form-control" placeholder="MM/YY" value="08/29">
+              <input type="password" class="form-control" placeholder="CVV" value="123">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeTrackPayModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnConfirmOnlinePay">Authorize &amp; Pay Now 🔒</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <footer class="footer">
     <p>&copy; 2026 PCTS Express Logistics Inc. All rights reserved.</p>

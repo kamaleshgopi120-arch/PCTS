@@ -21,6 +21,7 @@ class Parcel(Base):
     sender_phone = Column(String(15), nullable=False)
     receiver_name = Column(String(100), nullable=False)
     receiver_phone = Column(String(15), nullable=False)
+    receiver_address = Column(String(255), nullable=True)
     source_city = Column(String(50), nullable=False)
     destination_city = Column(String(50), nullable=False)
     parcel_type = Column(String(50), nullable=False)

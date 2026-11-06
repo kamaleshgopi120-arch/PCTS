@@ -25,7 +25,7 @@
 
       <div class="nav-auth">
         <span style="font-size: 0.85rem; color: var(--text-secondary);">Agent: <strong id="agentHeaderName" style="color: #ffffff;">Ravi Kumar</strong></span>
-        <a href="login.html" class="btn btn-outline btn-sm" id="logoutBtn">Logout</a>
+        <button onclick="logout()" class="btn btn-outline btn-sm" id="logoutBtn">Logout</button>
       </div>
     </nav>
   </header>
@@ -67,7 +67,7 @@
 
         <div class="tabs" role="tablist" id="deliveryFilterTabs">
           <button type="button" class="tab-btn active" id="tabActiveTasks">Active (3)</button>
-          <button type="button" class="tab-btn" id="tabCompletedTasks">Delivered (8)</button>
+          <button type="button" class="tab-btn" id="tabCompletedTasks">Completed (8)</button>
         </div>
       </div>
 
@@ -80,95 +80,15 @@
               <th scope="col">Recipient Details</th>
               <th scope="col">Delivery Address</th>
               <th scope="col">Weight / Type</th>
+              <th scope="col">Payment / COD</th>
               <th scope="col">Current Status</th>
               <th scope="col" style="text-align: right;">Action</th>
             </tr>
           </thead>
           <tbody id="agentTasksBody">
-            <!-- Task 1 -->
             <tr>
-              <td><strong style="color: var(--accent-cyan);">TRK7A8B9C</strong></td>
-              <td>
-                <div style="font-weight: 600;">Rohan Mehta</div>
-                <a href="tel:9820011223" style="font-size: 0.82rem; color: var(--accent-emerald); display: inline-flex; align-items: center; gap: 0.25rem;">
-                  📞 9820011223
-                </a>
-              </td>
-              <td style="max-width: 250px;">
-                Flat 402, Sea Breeze Apts, Worli Sea Face, Mumbai 400018
-              </td>
-              <td>2.5 kg &bull; Electronics</td>
-              <td>
-                <span class="badge badge-outfordelivery">
-                  <span class="badge-dot"></span>Out for Delivery
-                </span>
-              </td>
-              <td style="text-align: right;">
-                <button 
-                  class="btn btn-primary btn-sm" 
-                  onclick="openUpdateModal('TRK7A8B9C', 'Out for Delivery', 'Worli Hub')"
-                  id="btnUpdateTRK7A8B9C"
-                >
-                  Update Status ✏️
-                </button>
-              </td>
-            </tr>
-
-            <!-- Task 2 -->
-            <tr>
-              <td><strong style="color: var(--accent-cyan);">TRK4D5E6F</strong></td>
-              <td>
-                <div style="font-weight: 600;">Deepak Joshi</div>
-                <a href="tel:9833445566" style="font-size: 0.82rem; color: var(--accent-emerald); display: inline-flex; align-items: center; gap: 0.25rem;">
-                  📞 9833445566
-                </a>
-              </td>
-              <td style="max-width: 250px;">
-                12, Nariman Point Commercial Tower, 5th Floor, Mumbai 400021
-              </td>
-              <td>5.2 kg &bull; General</td>
-              <td>
-                <span class="badge badge-intransit">
-                  <span class="badge-dot"></span>In Transit
-                </span>
-              </td>
-              <td style="text-align: right;">
-                <button 
-                  class="btn btn-outline btn-sm" 
-                  onclick="openUpdateModal('TRK4D5E6F', 'In Transit', 'Mumbai Central')"
-                  id="btnUpdateTRK4D5E6F"
-                >
-                  Update Status ✏️
-                </button>
-              </td>
-            </tr>
-
-            <!-- Task 3 -->
-            <tr>
-              <td><strong style="color: var(--accent-cyan);">TRK2B3C4D</strong></td>
-              <td>
-                <div style="font-weight: 600;">Simran Kaur</div>
-                <a href="tel:9819283746" style="font-size: 0.82rem; color: var(--accent-emerald); display: inline-flex; align-items: center; gap: 0.25rem;">
-                  📞 9819283746
-                </a>
-              </td>
-              <td style="max-width: 250px;">
-                B/104, Green Heights, Dadar West, Mumbai 400028
-              </td>
-              <td>0.5 kg &bull; Documents</td>
-              <td>
-                <span class="badge badge-pickedup">
-                  <span class="badge-dot"></span>Picked Up
-                </span>
-              </td>
-              <td style="text-align: right;">
-                <button 
-                  class="btn btn-outline btn-sm" 
-                  onclick="openUpdateModal('TRK2B3C4D', 'Picked Up', 'Dadar Local Office')"
-                  id="btnUpdateTRK2B3C4D"
-                >
-                  Update Status ✏️
-                </button>
+              <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                Loading assigned deliveries...
               </td>
             </tr>
           </tbody>
@@ -197,9 +117,10 @@
             <select id="newStatusSelect" class="form-control" required>
               <option value="Picked Up">Picked Up</option>
               <option value="In Transit">In Transit</option>
+              <option value="At Warehouse">At Warehouse</option>
               <option value="Out for Delivery">Out for Delivery</option>
               <option value="Delivered">Delivered (Completed)</option>
-              <option value="Failed">Delivery Attempt Failed</option>
+              <option value="Failed Delivery">Delivery Attempt Failed</option>
             </select>
           </div>
 

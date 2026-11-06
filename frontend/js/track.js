@@ -55,6 +55,7 @@ function initTrackingPage() {
    */
   async function performTracking(trackingId) {
     hideAlert(errorAlert);
+    hideAlert("trackingHistoryWarning");
     if (!resultContainer) return;
 
     if (searchBtn) {
@@ -72,9 +73,13 @@ function initTrackingPage() {
       renderStatusBadge(data.status);
       renderMetadataGrid(data);
       renderStepWizard(data.status);
+      renderPaymentCard(data);
       renderTimeline(data.history || data.events || [], data);
 
       resultContainer.style.display = "block";
+      if (data.warning) {
+        showAlert("trackingHistoryWarning", data.warning, "warning");
+      }
       resultContainer.scrollIntoView({ behavior: "smooth", block: "start" });
 
     } catch (err) {
@@ -99,18 +104,19 @@ function initTrackingPage() {
     const textEl = document.getElementById("statusBadgeText");
     if (!badgeEl || !textEl) return;
 
-    const normalized = (status || "").toLowerCase().replace(/[^a-z]/g, "");
+    // Fix: use exact lowercase match to avoid "failed delivery" matching "delivered"
+    const normalized = (status || "").toLowerCase().trim();
     badgeEl.className = "badge";
 
-    if (normalized.includes("delivered")) {
+    if (normalized === "delivered") {
       badgeEl.classList.add("badge-delivered");
-    } else if (normalized.includes("outfor") || normalized.includes("delivery")) {
+    } else if (normalized === "out for delivery") {
       badgeEl.classList.add("badge-outfordelivery");
-    } else if (normalized.includes("transit")) {
+    } else if (normalized === "in transit" || normalized === "at warehouse") {
       badgeEl.classList.add("badge-intransit");
-    } else if (normalized.includes("picked")) {
+    } else if (normalized === "picked up") {
       badgeEl.classList.add("badge-pickedup");
-    } else if (normalized.includes("failed")) {
+    } else if (normalized === "failed delivery" || normalized === "returned") {
       badgeEl.classList.add("badge-failed");
     } else {
       badgeEl.classList.add("badge-booked");
@@ -130,7 +136,8 @@ function initTrackingPage() {
 
     if (originEl) originEl.textContent = data.source_city || "N/A";
     if (destEl) destEl.textContent = data.destination_city || "N/A";
-    if (locEl) locEl.textContent = data.current_location || `${data.source_city || 'Origin'} Hub`;
+    // Fix: API field is `location`, not `current_location`
+    if (locEl) locEl.textContent = data.location || `${data.source_city || 'Origin'} Hub`;
     if (weightCatEl) {
       weightCatEl.textContent = `${data.weight_kg || 0} kg • ${data.parcel_type || 'Standard'}`;
     }
@@ -150,17 +157,22 @@ function initTrackingPage() {
 
     // Determine current progression index
     let activeIdx = 0;
-    const normCurrent = (currentStatus || "").toLowerCase();
+    const normCurrent = (currentStatus || "").toLowerCase().trim();
 
-    if (normCurrent.includes("delivered")) {
+    if (normCurrent === "delivered") {
       activeIdx = 4;
-    } else if (normCurrent.includes("out for delivery")) {
+    } else if (normCurrent === "out for delivery") {
       activeIdx = 3;
-    } else if (normCurrent.includes("in transit")) {
+    } else if (normCurrent === "in transit" || normCurrent === "at warehouse") {
+      // At Warehouse is between In Transit and Out for Delivery — show step 3 (In Transit)
       activeIdx = 2;
-    } else if (normCurrent.includes("picked up")) {
+    } else if (normCurrent === "picked up") {
       activeIdx = 1;
+    } else if (normCurrent === "failed delivery" || normCurrent === "returned") {
+      // Failed/Returned: keep wizard at last known active step (Out for Delivery)
+      activeIdx = 3;
     } else {
+      // Booked or unknown
       activeIdx = 0;
     }
 
@@ -189,8 +201,8 @@ function initTrackingPage() {
       timelineEl.innerHTML = `
         <div class="timeline-item active">
           <div class="timeline-dot"></div>
-          <div class="timeline-title">${parcelData.status || 'Shipment Booked'}</div>
-          <div class="timeline-meta">${parcelData.current_location || parcelData.source_city || 'Origin Facility'}</div>
+          <div class="timeline-title">${escapeHtml(parcelData.status || 'Shipment Booked')}</div>
+          <div class="timeline-meta">${escapeHtml(parcelData.location || parcelData.source_city || 'Origin Facility')}</div>
           <div class="timeline-notes">Parcel is active in the PCTS tracking system.</div>
         </div>
       `;
@@ -202,10 +214,10 @@ function initTrackingPage() {
 
     timelineEl.innerHTML = sorted.map((ev, index) => {
       const isActive = index === 0 ? " active" : "";
-      const eventTitle = ev.status || "Checkpoint Scan";
-      const timestamp = formatDateTime(ev.timestamp);
-      const loc = ev.location ? `${ev.location} • ` : "";
-      const notes = ev.notes || "Checkpoint recorded successfully.";
+      const eventTitle = escapeHtml(ev.status || "Checkpoint Scan");
+      const timestamp = escapeHtml(formatDateTime(ev.timestamp));
+      const loc = ev.location ? `${escapeHtml(ev.location)} • ` : "";
+      const notes = escapeHtml(ev.notes || "Checkpoint recorded successfully.");
 
       return `
         <div class="timeline-item${isActive}">
@@ -217,4 +229,108 @@ function initTrackingPage() {
       `;
     }).join("");
   }
+
+  /**
+   * Render Payment Status Card
+   */
+  function renderPaymentCard(data) {
+    const amountEl = document.getElementById("displayPaymentAmount");
+    const methodEl = document.getElementById("displayPaymentMethod");
+    const badgeEl = document.getElementById("displayPaymentBadge");
+    const badgeTextEl = document.getElementById("paymentBadgeText");
+    const payBtn = document.getElementById("btnPayOnlineModal");
+
+    window._currentTrackingData = data;
+
+    const charge = data.charge ?? 50.00;
+    const isPaid = (data.payment_status || "").toLowerCase() === "paid";
+    const method = data.payment_method || (isPaid ? "Online" : "Cash on Delivery");
+
+    if (amountEl) amountEl.textContent = formatCurrency(charge);
+    if (methodEl) methodEl.textContent = `via ${method}`;
+
+    if (badgeEl && badgeTextEl) {
+      badgeEl.className = "badge";
+      if (isPaid) {
+        badgeEl.classList.add("badge-delivered");
+        badgeTextEl.textContent = "PAID ✓";
+        if (payBtn) payBtn.style.display = "none";
+      } else {
+        badgeEl.classList.add("badge-failed");
+        badgeTextEl.textContent = "PENDING (COD)";
+        if (payBtn) payBtn.style.display = "inline-flex";
+      }
+    }
+  }
+
+  // Setup Track Online Payment Modal Form
+  const trackPayForm = document.getElementById("trackPayForm");
+  if (trackPayForm) {
+    trackPayForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const data = window._currentTrackingData;
+      if (!data) return;
+
+      const methodSelect = document.getElementById("trackPayMethodSelect");
+      const chosenMethod = methodSelect ? methodSelect.value : "UPI";
+      const submitBtn = document.getElementById("btnConfirmOnlinePay");
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Processing Payment...";
+      }
+
+      try {
+        await apiRequest(`/api/payments/pay-online/${encodeURIComponent(data.tracking_id)}`, {
+          method: "POST",
+          body: JSON.stringify({
+            payment_method: chosenMethod
+          })
+        });
+
+        alert(`Payment of ${formatCurrency(data.charge ?? 50)} settled successfully via ${chosenMethod}!`);
+        closeTrackPayModal();
+        performTracking(data.tracking_id);
+      } catch (err) {
+        alert(`Payment Error: ${err.message || 'Could not complete online settlement.'}`);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Authorize & Pay Now 🔒";
+        }
+      }
+    });
+  }
+}
+
+// Global modal triggers for tracking page
+window.openTrackPayModal = function() {
+  const data = window._currentTrackingData;
+  const modal = document.getElementById("trackPayModal");
+  const displayAmount = document.getElementById("modalPayAmountDisplay");
+  if (displayAmount && data) {
+    displayAmount.textContent = formatCurrency(data.charge ?? 50);
+  }
+  if (modal) modal.classList.add("active");
+};
+
+window.closeTrackPayModal = function() {
+  const modal = document.getElementById("trackPayModal");
+  if (modal) modal.classList.remove("active");
+};
+
+window.toggleTrackPayOption = function(method) {
+  const upiBox = document.getElementById("trackUpiBox");
+  const cardBox = document.getElementById("trackCardBox");
+  if (upiBox) upiBox.style.display = method === "UPI" ? "block" : "none";
+  if (cardBox) cardBox.style.display = method === "Card" ? "block" : "none";
+};
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }

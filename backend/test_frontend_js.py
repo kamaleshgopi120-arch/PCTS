@@ -115,6 +115,13 @@ def test_fastapi_serving_js():
         assert resp.status_code == 200, f"Failed GET /static/js/{script_name}: {resp.status_code}"
         ct = resp.headers.get("content-type", "")
         assert "javascript" in ct or "text/plain" in ct, f"Unexpected Content-Type: {ct}"
+        if script_name == "book_parcel.js":
+            assert "receiver_address: receiverAddress" in resp.text, (
+                "Served booking script does not include the recipient address in the API payload."
+            )
+            assert "no-store" in resp.headers.get("cache-control", ""), (
+                "Booking script must not be served from a stale browser cache."
+            )
         print(f"[PASS] GET /static/js/{script_name.ljust(18)} -> 200 OK (Content-Type: {ct})")
 
 
@@ -172,6 +179,7 @@ def test_complete_api_workflow_for_frontend():
         "sender_phone": "9876543210",
         "receiver_name": "Rohan Recipient",
         "receiver_phone": "9811223344",
+        "receiver_address": "404 Marine Drive, Mumbai",
         "source_city": "Mumbai",
         "destination_city": "Delhi",
         "parcel_type": "Electronics",
@@ -184,6 +192,7 @@ def test_complete_api_workflow_for_frontend():
     parcel_id = parcel_data["parcel_id"]
     # 3.5kg falls in tier 2 (1-5kg): 3.5 * 30 = 105.00
     assert parcel_data["charge"] == 105.0
+    assert parcel_data["receiver_address"] == "404 Marine Drive, Mumbai"
     print(f"  [PASS] Booked parcel with ID: {parcel_id} | Tracking ID: {tracking_id} | Charge: Rs.{parcel_data['charge']}")
 
     # 5. Public Parcel Tracking (simulates frontend/js/track.js)
@@ -211,7 +220,16 @@ def test_complete_api_workflow_for_frontend():
     assert agents_resp.status_code == 200
     agents = agents_resp.json()
     assert len(agents) > 0
-    assigned_agent = agents[0]
+    agent_login = client.post("/api/auth/login", json={
+        "email": "ravi.delivery@pcts.com",
+        "password": "Delivery@12345"
+    })
+    assert agent_login.status_code == 200, f"Agent login failed: {agent_login.text}"
+    assigned_agent = next(
+        (agent for agent in agents if agent["user_id"] == agent_login.json()["user_id"]),
+        None
+    )
+    assert assigned_agent is not None, "Logged-in agent was not available for assignment."
     agent_id = assigned_agent["delivery_person_id"]
 
     # Assign parcel
@@ -241,7 +259,14 @@ def test_complete_api_workflow_for_frontend():
     assert len(matching) == 1
     print(f"  [PASS] Agent task queue contains assigned parcel: {tracking_id} (Status: {matching[0]['status']})")
 
-    # Agent updates milestone to "In Transit"
+    # Agent updates milestones in order: Booked -> Picked Up -> In Transit.
+    pickup_resp = client.put(f"/api/deliveries/{delivery_id}/status", headers=agent_headers, json={
+        "status": "Picked Up",
+        "location": "Mumbai Sender Address",
+        "notes": "Collected from sender."
+    })
+    assert pickup_resp.status_code == 200, f"Pickup update failed: {pickup_resp.text}"
+
     status_resp = client.put(f"/api/deliveries/{delivery_id}/status", headers=agent_headers, json={
         "status": "In Transit",
         "location": "Mumbai Central Freight Terminal",

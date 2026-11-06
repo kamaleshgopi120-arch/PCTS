@@ -62,7 +62,13 @@ def track_parcel_public(
     current_location = parcel.status.location if parcel.status else f"{parcel.source_city} Booking Office"
     last_updated = parcel.status.updated_at if (parcel.status and parcel.status.updated_at) else parcel.booked_at
     is_delivered = current_status.strip().lower() == "delivered"
-    delivered_at = parcel.delivery.delivered_at if (parcel.delivery and is_delivered) else None
+    delivered_at = None
+    if is_delivered:
+        delivered_at = (
+            parcel.delivery.delivered_at
+            if parcel.delivery and parcel.delivery.delivered_at
+            else last_updated
+        )
 
     # Retrieve history from MongoDB (Fault tolerant with EC-21 / EC-35)
     history_events = get_tracking_history(cleaned_id)
@@ -83,6 +89,10 @@ def track_parcel_public(
             for ev in history_events
         ]
 
+    payment = parcel.payment
+    pay_status = payment.payment_status if payment else "Pending"
+    pay_method = payment.payment_method if payment else "Cash on Delivery"
+
     return TrackingResponse(
         tracking_id=parcel.tracking_id,
         status=current_status,
@@ -91,6 +101,10 @@ def track_parcel_public(
         destination_city=parcel.destination_city,
         receiver_name=parcel.receiver_name,
         weight_kg=float(parcel.weight_kg),
+        parcel_type=parcel.parcel_type,
+        charge=float(parcel.charge),
+        payment_status=pay_status,
+        payment_method=pay_method,
         booked_at=parcel.booked_at,
         last_updated=last_updated,
         is_delivered=is_delivered,

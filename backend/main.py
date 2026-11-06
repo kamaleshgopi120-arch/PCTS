@@ -63,6 +63,7 @@ def ensure_default_demo_users():
         from backend.models.user import User
         from backend.security import hash_password, verify_password
         from sqlalchemy import select
+        from backend.database import SessionLocal  # Fix: import SessionLocal before use
 
         demo_credentials = {
             "arun.kumar@gmail.com": "Customer@12345",
@@ -241,7 +242,14 @@ from fastapi.staticfiles import StaticFiles
 
 frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
 if os.path.exists(frontend_dir):
-    app.mount("/static", StaticFiles(directory=frontend_dir, html=True), name="static")
+    class FrontendStaticFiles(StaticFiles):
+        async def get_response(self, path, scope):
+            response = await super().get_response(path, scope)
+            if path.endswith((".html", ".js")):
+                response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            return response
+
+    app.mount("/static", FrontendStaticFiles(directory=frontend_dir, html=True), name="static")
 
 
 
@@ -337,6 +345,7 @@ def demo_book_parcel(parcel_in: ParcelCreate):
         sender_phone=parcel_in.sender_phone,
         receiver_name=parcel_in.receiver_name,
         receiver_phone=parcel_in.receiver_phone,
+        receiver_address=parcel_in.receiver_address,
         source_city=parcel_in.source_city,
         destination_city=parcel_in.destination_city,
         parcel_type=parcel_in.parcel_type.value,

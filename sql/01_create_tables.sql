@@ -118,6 +118,7 @@ CREATE TABLE parcel (
     sender_phone VARCHAR(15) NOT NULL,
     receiver_name VARCHAR(100) NOT NULL,
     receiver_phone VARCHAR(15) NOT NULL,
+    receiver_address VARCHAR(255),
     source_city VARCHAR(50) NOT NULL,
     destination_city VARCHAR(50) NOT NULL,
     parcel_type VARCHAR(50) NOT NULL,

@@ -163,6 +163,8 @@ CREATE PROCEDURE update_parcel_status(
 )
 BEGIN
     DECLARE v_parcel_id INT DEFAULT NULL;
+    DECLARE v_current_status VARCHAR(30) DEFAULT NULL;
+    DECLARE v_transition_allowed BOOLEAN DEFAULT FALSE;
 
     -- Exit handler for unexpected SQL exceptions
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -172,36 +174,80 @@ BEGIN
         SET p_message = 'ERROR: Database error occurred while updating status.';
     END;
 
-    -- 1. Find the parcel_id corresponding to this tracking_id
+    START TRANSACTION;
+
+    -- 1. Lock the parcel and current status while validating the transition.
     SELECT parcel_id INTO v_parcel_id
     FROM parcel
-    WHERE tracking_id = p_tracking_id;
+    WHERE tracking_id = p_tracking_id
+    FOR UPDATE;
 
     -- 2. Validate that the parcel exists
     IF v_parcel_id IS NULL THEN
+        ROLLBACK;
         SET p_rows_affected = 0;
         SET p_message = CONCAT('ERROR: Parcel with tracking ID ', p_tracking_id, ' not found.');
     ELSE
-        START TRANSACTION;
+        SELECT status INTO v_current_status
+        FROM parcel_status
+        WHERE parcel_id = v_parcel_id
+        FOR UPDATE;
 
-        -- 3. Update the parcel_status table (This will fire `trg_after_status_update`!)
-        UPDATE parcel_status
-        SET status = p_new_status,
-            location = p_location,
-            updated_at = NOW()
-        WHERE parcel_id = v_parcel_id;
+        IF v_current_status IS NULL THEN
+            ROLLBACK;
+            SET p_rows_affected = 0;
+            SET p_message = 'ERROR: Parcel has no current status record.';
+        ELSEIF p_new_status IS NULL OR p_new_status NOT IN (
+            'Booked', 'Picked Up', 'In Transit', 'At Warehouse',
+            'Out for Delivery', 'Delivered', 'Failed Delivery', 'Returned'
+        ) THEN
+            ROLLBACK;
+            SET p_rows_affected = 0;
+            SET p_message = 'ERROR: Invalid parcel status.';
+        ELSEIF p_location IS NULL OR CHAR_LENGTH(TRIM(p_location)) < 2 THEN
+            ROLLBACK;
+            SET p_rows_affected = 0;
+            SET p_message = 'ERROR: A valid location is required.';
+        ELSE
+            SET v_transition_allowed = CASE
+                WHEN v_current_status = 'Booked' AND p_new_status = 'Picked Up' THEN TRUE
+                WHEN v_current_status = 'Picked Up' AND p_new_status = 'In Transit' THEN TRUE
+                WHEN v_current_status = 'In Transit' AND p_new_status = 'At Warehouse' THEN TRUE
+                WHEN v_current_status = 'At Warehouse' AND p_new_status = 'Out for Delivery' THEN TRUE
+                WHEN v_current_status = 'Out for Delivery' AND p_new_status IN ('Delivered', 'Failed Delivery') THEN TRUE
+                WHEN v_current_status = 'Failed Delivery' AND p_new_status = 'Returned' THEN TRUE
+                ELSE FALSE
+            END;
 
-        -- 4. If new status is 'Delivered', automatically stamp delivered_at on delivery record
-        IF p_new_status = 'Delivered' THEN
-            UPDATE delivery
-            SET delivered_at = NOW()
-            WHERE parcel_id = v_parcel_id AND delivered_at IS NULL;
+            IF NOT v_transition_allowed THEN
+                ROLLBACK;
+                SET p_rows_affected = 0;
+                SET p_message = CONCAT(
+                    'ERROR: Invalid status transition from ',
+                    v_current_status,
+                    ' to ',
+                    p_new_status,
+                    '.'
+                );
+            ELSE
+                -- Updating parcel_status fires `trg_after_status_update`.
+                UPDATE parcel_status
+                SET status = p_new_status,
+                    location = p_location,
+                    updated_at = NOW()
+                WHERE parcel_id = v_parcel_id;
+
+                IF p_new_status = 'Delivered' THEN
+                    UPDATE delivery
+                    SET delivered_at = NOW()
+                    WHERE parcel_id = v_parcel_id AND delivered_at IS NULL;
+                END IF;
+
+                COMMIT;
+                SET p_rows_affected = 1;
+                SET p_message = CONCAT('SUCCESS: Status of ', p_tracking_id, ' updated to ', p_new_status);
+            END IF;
         END IF;
-
-        COMMIT;
-
-        SET p_rows_affected = 1;
-        SET p_message = CONCAT('SUCCESS: Status of ', p_tracking_id, ' updated to ', p_new_status);
     END IF;
 END //
 

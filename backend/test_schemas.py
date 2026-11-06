@@ -111,6 +111,7 @@ def test_parcel_validation():
         "sender_phone": "9876543210",
         "receiver_name": "Priya Sharma",
         "receiver_phone": "9876543222",
+        "receiver_address": "21 Bengaluru Main Road",
         "source_city": "Chennai",
         "destination_city": "Bengaluru",
         "parcel_type": "Electronics",

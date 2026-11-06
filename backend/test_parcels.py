@@ -55,6 +55,7 @@ def test_parcel_booking(cust1_token, admin_token):
         "sender_phone": "9876543210",
         "receiver_name": "Divya Prakash",
         "receiver_phone": "9876549999",
+        "receiver_address": "21 Coimbatore Market Road",
         "source_city": "Chennai",
         "destination_city": "Coimbatore",
         "parcel_type": "Electronics",

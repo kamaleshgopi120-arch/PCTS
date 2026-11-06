@@ -164,7 +164,12 @@ function showAlert(elementId, message, type = "danger") {
   if (!alertEl) return;
   alertEl.className = `alert alert-${type}`;
   alertEl.style.display = "flex";
-  alertEl.innerHTML = `<span>${message}</span>`;
+  const messageEl = alertEl.querySelector("span");
+  if (messageEl) {
+    messageEl.textContent = message;
+  } else {
+    alertEl.textContent = message;
+  }
   alertEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 

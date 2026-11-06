@@ -2,7 +2,7 @@
 backend/test_all.py
 =============================================================================
 Parcel and Courier Tracking System (PCTS) — Phase 22 Master Test Runner
-Orchestrates and executes all 16 automated test suites across all phases.
+Orchestrates and executes all automated test suites across all phases.
 =============================================================================
 """
 
@@ -15,6 +15,10 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 PYTHON_EXE = sys.executable
 
 TEST_SUITES = [
+    {
+        "name": "Workflow Rules: Pricing, Weights & Status Transitions",
+        "script": "backend/test_workflow_rules.py"
+    },
     {
         "name": "Phase 07: FastAPI Core & System Endpoints",
         "script": "backend/test_app.py"
@@ -99,11 +103,11 @@ def run_master_test_suite():
         script_path = os.path.join(PROJECT_ROOT, suite["script"])
 
         if not os.path.isfile(script_path):
-            print(f"[{idx:02d}/16] {name.ljust(50)} -> [MISSING SCRIPT]")
+            print(f"[{idx:02d}/{len(TEST_SUITES)}] {name.ljust(50)} -> [MISSING SCRIPT]")
             results.append({"name": name, "status": "FAIL", "duration": 0.0, "error": "Script not found"})
             continue
 
-        print(f"\n>> [{idx:02d}/16] RUNNING: {name} ({suite['script']})")
+        print(f"\n>> [{idx:02d}/{len(TEST_SUITES)}] RUNNING: {name} ({suite['script']})")
         start_t = time.time()
 
         proc = subprocess.run(
@@ -162,7 +166,7 @@ def run_master_test_suite():
     print("=" * 85)
 
     if failed_count == 0:
-        print("\n[OK] ALL 16 TEST SUITES PASSED FLAWLESSLY! ZERO REGRESSIONS DETECTED. [OK]\n")
+        print(f"\n[OK] ALL {len(TEST_SUITES)} TEST SUITES PASSED FLAWLESSLY! ZERO REGRESSIONS DETECTED. [OK]\n")
         sys.exit(0)
     else:
         print(f"\n[FAIL] {failed_count} TEST SUITE(S) FAILED. Please review the error logs above.\n")

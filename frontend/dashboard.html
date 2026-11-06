@@ -27,7 +27,7 @@
 
       <div class="nav-auth">
         <span style="font-size: 0.85rem; color: var(--text-secondary);">Logged as: <strong style="color: #ffffff;">Admin (HQ)</strong></span>
-        <a href="login.html" class="btn btn-outline btn-sm" id="logoutBtn">Sign Out</a>
+        <button onclick="logout()" class="btn btn-outline btn-sm" id="logoutBtn">Sign Out</button>
       </div>
     </nav>
   </header>
@@ -118,63 +118,9 @@
             </tr>
           </thead>
           <tbody id="adminTableBody">
-            <!-- Row 1 -->
             <tr>
-              <td><strong style="color: var(--accent-cyan);">TRK7A8B9C</strong></td>
-              <td>Arjun Sharma</td>
-              <td>Rohan Mehta</td>
-              <td>Mumbai &rarr; Delhi</td>
-              <td>2.5 kg</td>
-              <td><span class="badge badge-intransit"><span class="badge-dot"></span>In Transit</span></td>
-              <td><span class="badge badge-delivered">PAID</span></td>
-              <td>Ravi Kumar</td>
-              <td style="text-align: right;">
-                <button class="btn btn-outline btn-sm" onclick="openAssignModal('TRK7A8B9C')">Assign</button>
-              </td>
-            </tr>
-
-            <!-- Row 2 -->
-            <tr>
-              <td><strong style="color: var(--accent-cyan);">TRK1X2Y3Z</strong></td>
-              <td>Priya Nair</td>
-              <td>Ananya Roy</td>
-              <td>Bengaluru &rarr; Chennai</td>
-              <td>0.8 kg</td>
-              <td><span class="badge badge-booked"><span class="badge-dot"></span>Booked</span></td>
-              <td><span class="badge badge-failed">PENDING</span></td>
-              <td><em>Unassigned</em></td>
-              <td style="text-align: right;">
-                <button class="btn btn-primary btn-sm" onclick="openAssignModal('TRK1X2Y3Z')">Assign</button>
-              </td>
-            </tr>
-
-            <!-- Row 3 -->
-            <tr>
-              <td><strong style="color: var(--accent-cyan);">TRK4D5E6F</strong></td>
-              <td>Karan Verma</td>
-              <td>Deepak Joshi</td>
-              <td>Pune &rarr; Mumbai</td>
-              <td>5.2 kg</td>
-              <td><span class="badge badge-outfordelivery"><span class="badge-dot"></span>Out for Delivery</span></td>
-              <td><span class="badge badge-delivered">PAID</span></td>
-              <td>Suresh Patil</td>
-              <td style="text-align: right;">
-                <button class="btn btn-outline btn-sm" onclick="openAssignModal('TRK4D5E6F')">Assign</button>
-              </td>
-            </tr>
-
-            <!-- Row 4 -->
-            <tr>
-              <td><strong style="color: var(--accent-cyan);">TRK9K8J7H</strong></td>
-              <td>Vikram Singh</td>
-              <td>Neha Gupta</td>
-              <td>Delhi &rarr; Kolkata</td>
-              <td>1.2 kg</td>
-              <td><span class="badge badge-delivered"><span class="badge-dot"></span>Delivered</span></td>
-              <td><span class="badge badge-delivered">PAID</span></td>
-              <td>Sunil Das</td>
-              <td style="text-align: right;">
-                <a href="track.html" class="btn btn-outline btn-sm">Logs</a>
+              <td colspan="9" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                Connecting to logistics database...
               </td>
             </tr>
           </tbody>
@@ -227,6 +173,62 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-outline" onclick="closeAssignModal()">Cancel</button>
           <button type="submit" class="btn btn-primary" id="btnConfirmAssign">Confirm Assignment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Payment Management Modal Dialog -->
+  <div class="modal-backdrop" id="paymentModal" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="paymentModalTitle">Update Payment Information</h3>
+        <button type="button" class="modal-close" onclick="closePaymentModal()" aria-label="Close Modal">&times;</button>
+      </div>
+
+      <form id="paymentUpdateForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="paymentTrackingId">Parcel Tracking ID</label>
+            <input type="text" id="paymentTrackingId" class="form-control" readonly>
+          </div>
+
+          <input type="hidden" id="paymentParcelId">
+
+          <div class="form-group">
+            <label class="form-label" for="paymentAmount">Payment Amount (₹)</label>
+            <input type="number" id="paymentAmount" class="form-control" step="0.01" min="0" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="paymentStatus">Payment Status</label>
+            <select id="paymentStatus" class="form-control" required>
+              <option value="Pending">Pending</option>
+              <option value="Paid">Paid</option>
+              <option value="Failed">Failed</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="paymentMethod">Payment Method</label>
+            <select id="paymentMethod" class="form-control" required>
+              <option value="Cash">Cash on Delivery</option>
+              <option value="Card">Credit/Debit Card</option>
+              <option value="UPI">UPI</option>
+              <option value="Net Banking">Net Banking</option>
+              <option value="Wallet">Digital Wallet</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="paymentNotes">Transaction Notes (Optional)</label>
+            <input type="text" id="paymentNotes" class="form-control" placeholder="e.g. Collected by delivery agent">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closePaymentModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnConfirmPayment">Update Payment</button>
         </div>
       </form>
     </div>

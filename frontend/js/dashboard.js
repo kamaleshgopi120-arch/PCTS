@@ -6,6 +6,7 @@
  */
 
 let allParcels = [];
+let allDeliveries = [];
 let allAgents = [];
 let activeFilter = "ALL";
 let activeParcelMap = new Map(); // tracking_id -> parcel_id
@@ -32,6 +33,7 @@ async function initAdminDashboard() {
   setupFilterTabs();
   setupSearch();
   setupAssignModal();
+  setupPaymentModal();
 
   const refreshBtn = document.getElementById("btnRefreshTable");
   if (refreshBtn) {
@@ -68,13 +70,14 @@ async function loadKPIStats() {
       totalParcelsEl.textContent = parcelReport.total_parcels.toLocaleString();
     }
 
-    if (parcelReport.breakdown) {
+    // Fix: API returns `by_status`, not `breakdown`
+    if (parcelReport.by_status) {
       let activeCount = 0;
       let deliveredCount = 0;
 
-      parcelReport.breakdown.forEach(b => {
+      parcelReport.by_status.forEach(b => {
         const s = (b.status || "").toLowerCase();
-        if (s.includes("transit") || s.includes("out for delivery") || s.includes("picked")) {
+        if (s.includes("transit") || s.includes("out for delivery") || s.includes("picked") || s.includes("at warehouse")) {
           activeCount += b.count;
         } else if (s.includes("delivered")) {
           deliveredCount += b.count;
@@ -134,8 +137,12 @@ async function loadDashboardData() {
   `;
 
   try {
-    const parcels = await apiRequest("/api/parcels?limit=100");
+    const [parcels, deliveries] = await Promise.all([
+      apiRequest("/api/parcels?limit=100"),
+      apiRequest("/api/deliveries?limit=100")
+    ]);
     allParcels = parcels || [];
+    allDeliveries = deliveries || [];
     activeParcelMap.clear();
 
     allParcels.forEach(p => {
@@ -193,7 +200,7 @@ function renderParcelsTable() {
   if (filtered.length === 0) {
     tableBody.innerHTML = `
       <tr>
-        <td colspan="9" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+        <td colspan="10" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
           No matching parcels found for the current filters.
         </td>
       </tr>
@@ -206,7 +213,13 @@ function renderParcelsTable() {
     const paymentBadge = getPaymentBadgeHtml(p.payment_status);
     const route = `${p.source_city} &rarr; ${p.destination_city}`;
     const weight = `${p.weight_kg} kg`;
-    const isDelivered = (p.status || "").toLowerCase().includes("delivered");
+    const status = (p.status || "").toLowerCase();
+    const isCompleted = status === "delivered" || status === "returned";
+    const assignment = allDeliveries.find(d => d.parcel_id === p.parcel_id);
+    const isAssigned = p.is_assigned || !!assignment;
+    const agentName = p.delivery_person_name || (assignment ? assignment.delivery_person_name : null);
+    const deliveryId = p.delivery_id || (assignment ? assignment.delivery_id : null);
+    const agentId = p.delivery_person_id || (assignment ? assignment.delivery_person_id : null);
 
     return `
       <tr>
@@ -217,17 +230,31 @@ function renderParcelsTable() {
         </td>
         <td>${escapeHtml(p.sender_name)}</td>
         <td>${escapeHtml(p.receiver_name)}</td>
-        <td>${route}</td>
-        <td>${weight}</td>
+        <td>${escapeHtml(p.source_city)} &rarr; ${escapeHtml(p.destination_city)}</td>
+        <td>${escapeHtml(weight)}</td>
         <td>${statusBadge}</td>
-        <td>${paymentBadge}</td>
-        <td>${escapeHtml(p.location || 'Pending Dispatch')}</td>
-        <td style="text-align: right;">
+        <td>
+          ${paymentBadge}
+          ${p.payment_status !== "Paid" ? `<button class="btn btn-outline btn-sm" style="margin-left: 0.5rem;" onclick="openPaymentModal('${p.tracking_id}', ${p.parcel_id}, '${p.payment_status}', ${p.payment_amount || p.charge})">Settle</button>` : ''}
+        </td>
+        <td>
           ${
-            isDelivered
-              ? `<a href="track.html?id=${encodeURIComponent(p.tracking_id)}" class="btn btn-outline btn-sm">Logs</a>`
-              : `<button class="btn btn-primary btn-sm" onclick="openAssignModal('${p.tracking_id}', ${p.parcel_id})">Assign</button>`
+            isAssigned
+              ? `<strong style="color: var(--accent-emerald);">✓ ${escapeHtml(agentName || 'Assigned')}</strong>`
+              : '<span class="badge badge-booked" style="font-size: 0.75rem;">Unassigned</span>'
           }
+        </td>
+        <td style="text-align: right;">
+          <div style="display: flex; gap: 0.35rem; justify-content: flex-end; align-items: center;">
+            <a href="track.html?id=${encodeURIComponent(p.tracking_id)}" class="btn btn-outline btn-sm" title="View tracking audit logs">Logs 📋</a>
+            ${
+              isCompleted
+                ? `<span class="badge badge-delivered" style="font-size: 0.75rem;">Done</span>`
+                : isAssigned
+                  ? `<button class="btn btn-outline btn-sm" style="color: var(--accent-cyan); border-color: var(--accent-cyan);" onclick="openAssignModal('${p.tracking_id}', ${p.parcel_id}, ${deliveryId || ''}, ${agentId || ''})" title="Reassign agent">Reassign 🔄</button>`
+                  : `<button class="btn btn-primary btn-sm" onclick="openAssignModal('${p.tracking_id}', ${p.parcel_id})">Assign 🚚</button>`
+            }
+          </div>
         </td>
       </tr>
     `;
@@ -262,7 +289,7 @@ function setupSearch() {
 }
 
 /**
- * Modal dialog submission handler
+ * Modal dialog submission handler for assignment
  */
 function setupAssignModal() {
   const form = document.getElementById("assignAgentForm");
@@ -295,19 +322,32 @@ function setupAssignModal() {
     submitBtn.textContent = "Assigning...";
 
     try {
-      await apiRequest("/api/deliveries", {
-        method: "POST",
-        body: JSON.stringify({
-          parcel_id: parcelId,
-          delivery_person_id: agentId,
-          notes: notes
-        })
-      });
+      const deliveryId = window._currentReassignDeliveryId;
+      if (deliveryId) {
+        await apiRequest(`/api/deliveries/${deliveryId}/reassign`, {
+          method: "PUT",
+          body: JSON.stringify({
+            parcel_id: parcelId,
+            delivery_person_id: agentId,
+            notes: notes
+          })
+        });
+        alert(`Parcel ${trackingId} successfully reassigned!`);
+      } else {
+        await apiRequest("/api/deliveries", {
+          method: "POST",
+          body: JSON.stringify({
+            parcel_id: parcelId,
+            delivery_person_id: agentId,
+            notes: notes
+          })
+        });
+        alert(`Parcel ${trackingId} successfully assigned to delivery executive!`);
+      }
 
-      alert(`Parcel ${trackingId} successfully assigned to delivery executive!`);
       closeAssignModal();
-      loadDashboardData();
-      loadKPIStats();
+      await loadDashboardData();
+      await loadKPIStats();
 
     } catch (err) {
       alert(`Assignment failed: ${err.message}`);
@@ -318,17 +358,132 @@ function setupAssignModal() {
   });
 }
 
+/**
+ * Setup payment modal form submission
+ */
+function setupPaymentModal() {
+  const form = document.getElementById("paymentUpdateForm");
+  if (!form) return;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const trackingIdInput = document.getElementById("paymentTrackingId");
+    const parcelIdInput = document.getElementById("paymentParcelId");
+    const amountInput = document.getElementById("paymentAmount");
+    const statusSelect = document.getElementById("paymentStatus");
+    const methodSelect = document.getElementById("paymentMethod");
+    const notesInput = document.getElementById("paymentNotes");
+    const submitBtn = document.getElementById("btnConfirmPayment");
+
+    const trackingId = trackingIdInput?.value;
+    const parcelId = parseInt(parcelIdInput?.value, 10);
+    const amount = parseFloat(amountInput?.value);
+    const status = statusSelect?.value;
+    const method = methodSelect?.value;
+    const notes = notesInput?.value.trim() || "Updated via Admin Dashboard";
+
+    if (!parcelId || !amount || !status || !method) {
+      alert("Please fill all required payment fields.");
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Updating...";
+
+    try {
+      // Check if payment exists first
+      let existingPayment = null;
+      try {
+        existingPayment = await apiRequest(`/api/payments/${parcelId}`);
+      } catch (err) {
+        // Payment doesn't exist yet
+      }
+
+      if (existingPayment) {
+        // Update existing payment
+        await apiRequest(`/api/payments/id/${existingPayment.payment_id}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            payment_status: status,
+            payment_method: method,
+            amount: amount,
+            notes: notes
+          })
+        });
+      } else {
+        // Create new payment record
+        await apiRequest("/api/payments", {
+          method: "POST",
+          body: JSON.stringify({
+            parcel_id: parcelId,
+            payment_status: status,
+            payment_method: method,
+            amount: amount,
+            notes: notes
+          })
+        });
+      }
+
+      alert(`Payment for ${trackingId} updated successfully!`);
+      closePaymentModal();
+      loadDashboardData();
+      loadKPIStats();
+
+    } catch (err) {
+      alert(`Payment update failed: ${err.message}`);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Update Payment";
+    }
+  });
+}
+
 // Global modal triggers for HTML onclick compatibility
-window.openAssignModal = function(trackingId, parcelId) {
+window.openAssignModal = function(trackingId, parcelId, deliveryId, currentAgentId) {
+  window._currentReassignDeliveryId = deliveryId || null;
   const trackingIdInput = document.getElementById("modalTrackingId");
+  const modalTitle = document.getElementById("assignModalTitle");
+  const agentSelect = document.getElementById("modalAgentSelect");
+  const submitBtn = document.getElementById("btnConfirmAssign");
+
   if (trackingIdInput) trackingIdInput.value = trackingId;
   if (parcelId) activeParcelMap.set(trackingId, parcelId);
+  if (agentSelect && currentAgentId) agentSelect.value = currentAgentId;
+  if (modalTitle) {
+    modalTitle.textContent = deliveryId ? "Reassign Delivery Executive" : "Assign Delivery Agent";
+  }
+  if (submitBtn) {
+    submitBtn.textContent = deliveryId ? "Confirm Reassignment" : "Confirm Assignment";
+  }
+
   const modal = document.getElementById("assignModal");
   if (modal) modal.classList.add("active");
 };
 
 window.closeAssignModal = function() {
+  window._currentReassignDeliveryId = null;
   const modal = document.getElementById("assignModal");
+  if (modal) modal.classList.remove("active");
+};
+
+window.openPaymentModal = function(trackingId, parcelId, currentStatus, currentAmount) {
+  const trackingIdInput = document.getElementById("paymentTrackingId");
+  const parcelIdInput = document.getElementById("paymentParcelId");
+  const amountInput = document.getElementById("paymentAmount");
+  const statusSelect = document.getElementById("paymentStatus");
+  
+  if (trackingIdInput) trackingIdInput.value = trackingId;
+  if (parcelIdInput) parcelIdInput.value = parcelId;
+  if (amountInput) amountInput.value = currentAmount || 0;
+  if (statusSelect) statusSelect.value = currentStatus || "Pending";
+  
+  const modal = document.getElementById("paymentModal");
+  if (modal) modal.classList.add("active");
+};
+
+window.closePaymentModal = function() {
+  const modal = document.getElementById("paymentModal");
   if (modal) modal.classList.remove("active");
 };
 
@@ -336,21 +491,25 @@ window.closeAssignModal = function() {
 function getStatusBadgeHtml(status) {
   const s = (status || "").toLowerCase();
   let badgeClass = "badge-booked";
-  if (s.includes("delivered")) badgeClass = "badge-delivered";
-  else if (s.includes("out for delivery")) badgeClass = "badge-outfordelivery";
-  else if (s.includes("transit")) badgeClass = "badge-intransit";
-  else if (s.includes("picked")) badgeClass = "badge-pickedup";
-  else if (s.includes("failed")) badgeClass = "badge-failed";
+  if (s === "delivered") badgeClass = "badge-delivered";
+  else if (s === "out for delivery") badgeClass = "badge-outfordelivery";
+  else if (s === "in transit") badgeClass = "badge-intransit";
+  else if (s === "picked up") badgeClass = "badge-pickedup";
+  else if (s === "failed delivery") badgeClass = "badge-failed";
+  else if (s === "at warehouse") badgeClass = "badge-intransit";
+  else if (s === "returned") badgeClass = "badge-failed";
 
   return `<span class="badge ${badgeClass}"><span class="badge-dot"></span>${escapeHtml(status || 'Booked')}</span>`;
 }
 
 function getPaymentBadgeHtml(paymentStatus) {
   const p = (paymentStatus || "").toLowerCase();
-  if (p === "paid" || p === "completed") {
+  if (p === "paid") {
     return `<span class="badge badge-delivered">PAID</span>`;
+  } else if (p === "failed") {
+    return `<span class="badge badge-failed">FAILED</span>`;
   }
-  return `<span class="badge badge-failed">PENDING</span>`;
+  return `<span class="badge badge-booked">PENDING</span>`;
 }
 
 function escapeHtml(str) {

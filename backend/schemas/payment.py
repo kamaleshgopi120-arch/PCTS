@@ -7,6 +7,7 @@ and payment history queries.
 """
 
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict, field_validator
@@ -22,26 +23,34 @@ class PaymentStatus(str, Enum):
 class PaymentUpdate(BaseModel):
     """
     Schema for settling or updating payment status (PUT /api/payments/{id}).
+    Also used for creating new payment records (POST /api/payments).
     Enforces EC-31: Amount must be greater than 0 if provided.
     """
-    payment_status: PaymentStatus = Field(..., description="Target status: Pending, Paid, or Failed")
+    parcel_id: Optional[int] = Field(default=None, gt=0, description="Parcel ID (required for creation)")
+    payment_status: Optional[PaymentStatus] = Field(default=None, description="Target status: Pending, Paid, or Failed")
     payment_method: Optional[str] = Field(
         default=None,
         min_length=2,
         max_length=30,
         description="e.g. Cash, Card, UPI, Online, Cash on Delivery"
     )
-    amount: Optional[float] = Field(
+    amount: Optional[Decimal] = Field(
         default=None,
         gt=0,
+        max_digits=10,
+        decimal_places=2,
         description="Payment amount in Rs. (must be strictly > 0, EC-31)"
     )
+    notes: Optional[str] = Field(default=None, max_length=500, description="Transaction notes")
 
     @field_validator("payment_method")
     @classmethod
     def clean_method(cls, v: Optional[str]) -> Optional[str]:
         if v is not None:
-            return v.strip().title()
+            cleaned = v.strip()
+            if not cleaned:
+                raise ValueError("Payment method cannot be blank.")
+            return cleaned.title()
         return v
 
 

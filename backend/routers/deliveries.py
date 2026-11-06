@@ -20,7 +20,7 @@ from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, or_
 
 from backend.database import get_db
 from backend.models.user import User
@@ -44,6 +44,7 @@ from backend.schemas.delivery import (
 )
 
 router = APIRouter(prefix="/api/deliveries", tags=["Delivery Management"])
+TERMINAL_PARCEL_STATUSES = ("Delivered", "Returned")
 
 
 def build_delivery_response(d: Delivery) -> DeliveryResponse:
@@ -52,6 +53,8 @@ def build_delivery_response(d: Delivery) -> DeliveryResponse:
     agent = d.delivery_person
     cur_status = parcel.status.status if parcel and parcel.status else "Booked"
     cur_loc = parcel.status.location if parcel and parcel.status else None
+
+    payment = parcel.payment if parcel else None
 
     return DeliveryResponse(
         delivery_id=d.delivery_id,
@@ -66,8 +69,12 @@ def build_delivery_response(d: Delivery) -> DeliveryResponse:
         location=cur_loc,
         receiver_name=parcel.receiver_name if parcel else "",
         receiver_phone=parcel.receiver_phone if parcel else "",
+        receiver_address=parcel.receiver_address if parcel else None,
         destination_city=parcel.destination_city if parcel else "",
         weight_kg=float(parcel.weight_kg) if parcel else 0.0,
+        payment_status=payment.payment_status if payment else "Pending",
+        payment_method=payment.payment_method if payment else "Cash on Delivery",
+        payment_amount=float(payment.amount) if payment else (float(parcel.charge) if parcel else 0.0),
     )
 
 
@@ -77,8 +84,8 @@ def build_delivery_response(d: Delivery) -> DeliveryResponse:
 @router.get(
     "/agents",
     response_model=List[DeliveryPersonResponse],
-    summary="List all delivery staff agents (Admin/Staff only)",
-    dependencies=[Depends(require_staff)]
+    summary="List all delivery agents (Admin only)",
+    dependencies=[Depends(require_admin)]
 )
 def list_delivery_agents(
     active_only: bool = Query(True, description="Filter for active staff only"),
@@ -119,14 +126,21 @@ def get_my_deliveries(
     agent_id = current_user.delivery_person.delivery_person_id
     query = (
         select(Delivery)
+        .join(Delivery.parcel)
+        .outerjoin(ParcelStatus, ParcelStatus.parcel_id == Parcel.parcel_id)
         .where(Delivery.delivery_person_id == agent_id)
         .order_by(Delivery.assigned_at.desc())
     )
 
     if completed is True:
-        query = query.where(Delivery.delivered_at.isnot(None))
+        query = query.where(ParcelStatus.status.in_(TERMINAL_PARCEL_STATUSES))
     elif completed is False:
-        query = query.where(Delivery.delivered_at.is_(None))
+        query = query.where(
+            or_(
+                ParcelStatus.status.is_(None),
+                ParcelStatus.status.notin_(TERMINAL_PARCEL_STATUSES)
+            )
+        )
 
     deliveries = db.scalars(query).all()
     return [build_delivery_response(d) for d in deliveries]
@@ -152,10 +166,12 @@ def assign_delivery(
     - EC-28: Delivery person must exist and be active (400 Bad Request).
     - EC-27: Cannot assign a parcel that is already delivered (400 Bad Request).
     - EC-26: Parcel cannot be assigned to more than one agent (400 Bad Request).
-    - Records assignment in MySQL and logs milestone in MongoDB.
+    - Records the assignment in MySQL without advancing parcel status.
     """
     # EC-29: Verify parcel exists
-    parcel = db.scalar(select(Parcel).where(Parcel.parcel_id == payload.parcel_id))
+    parcel = db.scalar(
+        select(Parcel).where(Parcel.parcel_id == payload.parcel_id).with_for_update()
+    )
     if not parcel:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -164,10 +180,14 @@ def assign_delivery(
 
     # EC-27: Check if parcel is already delivered
     current_status = parcel.status.status if parcel.status else "Booked"
-    if current_status.strip().title() == "Delivered":
+    if current_status in TERMINAL_PARCEL_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot assign a delivered parcel."
+            detail=(
+                "Cannot assign a delivered parcel."
+                if current_status == "Delivered"
+                else "Cannot assign a returned parcel."
+            )
         )
 
     # EC-26: Check if parcel already has an active delivery assignment
@@ -194,34 +214,77 @@ def assign_delivery(
     )
     db.add(new_delivery)
 
-    # Transition parcel status to 'Picked Up' if still 'Booked'
-    if current_status == "Booked":
-        if not parcel.status:
-            parcel.status = ParcelStatus(
-                parcel_id=parcel.parcel_id,
-                status="Picked Up",
-                location=f"Assigned to {agent.full_name}",
-                updated_at=datetime.now()
-            )
-            db.add(parcel.status)
-        else:
-            parcel.status.status = "Picked Up"
-            parcel.status.location = f"Assigned to {agent.full_name}"
-            parcel.status.updated_at = datetime.now()
-
     db.commit()
     db.refresh(new_delivery)
 
-    # Log milestone into MongoDB tracking history
+    # Log assignment milestone to MongoDB tracking history
     log_tracking_event(
         tracking_id=parcel.tracking_id,
-        status="Picked Up" if current_status == "Booked" else current_status,
-        location=f"Assigned to {agent.full_name} ({agent.vehicle_number or 'Vehicle'})",
+        status=current_status,
+        location=parcel.source_city,
         updated_by=current_user.email,
-        notes=f"Delivery assigned to {agent.full_name} (Phone: {agent.phone})"
+        notes=f"Assigned to delivery agent {agent.full_name} ({agent.phone})"
     )
 
     return build_delivery_response(new_delivery)
+
+
+# -----------------------------------------------------------------------------
+# 3.1 REASSIGN PARCEL TO A DIFFERENT AGENT (PUT /api/deliveries/{id}/reassign)
+# -----------------------------------------------------------------------------
+@router.put(
+    "/{delivery_id}/reassign",
+    response_model=DeliveryResponse,
+    summary="Reassign parcel to a different delivery agent (Admin only)",
+    dependencies=[Depends(require_admin)]
+)
+def reassign_delivery(
+    delivery_id: int,
+    payload: DeliveryCreate,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """Allows an administrator to reassign an undelivered parcel to another agent."""
+    delivery = db.scalar(
+        select(Delivery).where(Delivery.delivery_id == delivery_id).with_for_update()
+    )
+    if not delivery:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Delivery assignment not found."
+        )
+
+    parcel = delivery.parcel
+    current_status = parcel.status.status if (parcel and parcel.status) else "Booked"
+    if current_status in TERMINAL_PARCEL_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot reassign a delivered or returned parcel."
+        )
+
+    agent = db.scalar(
+        select(DeliveryPerson).where(DeliveryPerson.delivery_person_id == payload.delivery_person_id)
+    )
+    if not agent or not agent.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Delivery person not found or inactive."
+        )
+
+    delivery.delivery_person_id = payload.delivery_person_id
+    delivery.assigned_at = datetime.now()
+    db.commit()
+    db.refresh(delivery)
+
+    log_tracking_event(
+        tracking_id=parcel.tracking_id,
+        status=current_status,
+        location=parcel.source_city,
+        updated_by=current_user.email,
+        notes=f"Reassigned to delivery executive: {agent.full_name} ({agent.phone})"
+    )
+
+    return build_delivery_response(delivery)
 
 
 # -----------------------------------------------------------------------------
@@ -242,15 +305,28 @@ def list_all_deliveries(
     db: Session = Depends(get_db)
 ):
     """Lists all deliveries across the entire logistics network."""
-    query = select(Delivery).order_by(Delivery.delivery_id.desc())
+    query = (
+        select(Delivery)
+        .join(Delivery.parcel)
+        .outerjoin(ParcelStatus, ParcelStatus.parcel_id == Parcel.parcel_id)
+        .order_by(Delivery.delivery_id.desc())
+    )
 
     if delivery_person_id:
         query = query.where(Delivery.delivery_person_id == delivery_person_id)
 
     if completed is True:
-        query = query.where(Delivery.delivered_at.isnot(None))
+        query = query.where(ParcelStatus.status.in_(TERMINAL_PARCEL_STATUSES))
     elif completed is False:
-        query = query.where(Delivery.delivered_at.is_(None))
+        query = query.where(
+            or_(
+                ParcelStatus.status.is_(None),
+                ParcelStatus.status.notin_(TERMINAL_PARCEL_STATUSES)
+            )
+        )
+
+    if status_filter:
+        query = query.where(ParcelStatus.status.ilike(f"%{status_filter.strip()}%"))
 
     deliveries = db.scalars(query.offset(skip).limit(limit)).all()
     return [build_delivery_response(d) for d in deliveries]
@@ -319,7 +395,9 @@ def update_delivery_status(
     - MySQL trigger `trg_after_status_update` logs into `parcel_status_audit`.
     - MongoDB logs milestone into `tracking_history`.
     """
-    delivery = db.scalar(select(Delivery).where(Delivery.delivery_id == delivery_id))
+    delivery = db.scalar(
+        select(Delivery).where(Delivery.delivery_id == delivery_id).with_for_update()
+    )
     if not delivery:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -337,20 +415,33 @@ def update_delivery_status(
                 detail="You are not assigned to this parcel."
             )
 
-    parcel = delivery.parcel
-    current_status = parcel.status.status if parcel and parcel.status else "Booked"
+    parcel = db.scalar(
+        select(Parcel).where(Parcel.parcel_id == delivery.parcel_id).with_for_update()
+    )
+    if not parcel:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Parcel associated with this delivery no longer exists."
+        )
+    current_status = parcel.status.status if parcel.status else "Booked"
     target_status = status_update.status
 
-    # EC-23: Cannot update a parcel that is already delivered
-    if current_status.strip().lower() == "delivered":
+    # Completed parcel states are terminal.
+    if current_status in TERMINAL_PARCEL_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot update status of a delivered parcel."
+            detail=(
+                "Cannot update status of a delivered parcel."
+                if current_status == "Delivered"
+                else "Cannot update status of a returned parcel."
+            )
         )
 
     # EC-24: Check valid status transition hierarchy
+    # Fix: also reject self-transition on a delivered parcel (handled above)
+    # and reject completely invalid transitions
     allowed_transitions = VALID_STATUS_TRANSITIONS.get(current_status, [])
-    if target_status not in allowed_transitions and target_status != current_status:
+    if target_status not in allowed_transitions:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid status transition from '{current_status}' to '{target_status}'."
@@ -370,9 +461,14 @@ def update_delivery_status(
         parcel.status.location = status_update.location
         parcel.status.updated_at = datetime.now()
 
-    # If delivered, record delivery completion timestamp
+    # If delivered, record delivery completion timestamp and auto-settle COD if pending
     if target_status == "Delivered":
         delivery.delivered_at = datetime.now()
+        if parcel.payment and parcel.payment.payment_status != "Paid":
+            parcel.payment.payment_status = "Paid"
+            parcel.payment.paid_at = datetime.now()
+            if not parcel.payment.payment_method:
+                parcel.payment.payment_method = "Cash on Delivery"
 
     db.commit()
     db.refresh(delivery)

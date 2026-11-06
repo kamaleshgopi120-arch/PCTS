@@ -86,21 +86,21 @@ def get_customer(
     - Non-admin users can only view their own profile.
     - Enforces EC-08: If the customer does not exist, returns 404 Not Found.
     """
-    # Permission check: If customer, must own this profile
-    if current_user.role != "admin":
-        if not current_user.customer or current_user.customer.customer_id != customer_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access forbidden: You can only view your own customer profile."
-            )
-
-    # EC-08: Check if customer exists
+    # EC-08: Check if customer exists FIRST (404 before 403 — do not leak existence)
     customer = db.scalar(select(Customer).where(Customer.customer_id == customer_id))
     if not customer:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Customer not found."
         )
+
+    # Permission check: If customer role, must own this profile
+    if current_user.role != "admin":
+        if not current_user.customer or current_user.customer.customer_id != customer_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access forbidden: You can only view your own customer profile."
+            )
 
     resp = CustomerResponse.model_validate(customer)
     if customer.user:

@@ -56,10 +56,12 @@ else:
 # 2. Create the SQLAlchemy Engine
 # `pool_pre_ping=True`: Checks if a MySQL connection is alive before using it.
 # `pool_size=5`, `max_overflow=10`: Controls the connection pool capacity.
+# `connect_timeout=5`: Prevents indefinite hangs if database is offline.
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
     pool_recycle=3600,  # Recycle connections every hour to avoid MySQL timeout
+    connect_args={"connect_timeout": 5},
     echo=False          # Set to True if you want to see every raw SQL statement in the terminal
 )
 

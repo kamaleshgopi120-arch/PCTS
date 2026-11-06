@@ -70,6 +70,16 @@ class CustomerUpdate(BaseModel):
     address: Optional[str] = Field(None, max_length=255)
     city: Optional[str] = Field(None, min_length=2, max_length=50)
 
+    @field_validator("full_name", "city")
+    @classmethod
+    def clean_optional_text(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            cleaned = v.strip()
+            if len(cleaned) < 2:
+                raise ValueError("Value must contain at least two non-whitespace characters.")
+            return cleaned
+        return v
+
     @field_validator("phone")
     @classmethod
     def validate_phone(cls, v: Optional[str]) -> Optional[str]:

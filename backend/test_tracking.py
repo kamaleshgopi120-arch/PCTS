@@ -90,24 +90,56 @@ def test_status_update_and_trigger(admin_token, cust_token, deliv_token):
     print(f">> 2.2 Customer Updating Status: HTTP {res_cust.status_code} (Forbidden)")
     assert res_cust.status_code == 403
 
-    # 2.3 Delivery Agent updating status
+    # 2.3 Delivery agents cannot update unassigned parcels.
+    res_unassigned = client.put(
+        "/api/parcels/1/status",
+        json={"status": "Picked Up", "location": "Chennai"},
+        headers=deliv_headers
+    )
+    assert res_unassigned.status_code == 403
+
+    # 2.4 Admin cannot skip directly from Booked to In Transit.
+    res_skip = client.put(
+        "/api/parcels/1/status",
+        json={"status": "In Transit", "location": "Hub"},
+        headers=admin_headers
+    )
+    assert res_skip.status_code == 400
+
+    # Follow the required sequential parcel status transitions.
+    res_pickup = client.put(
+        "/api/parcels/1/status",
+        json={"status": "Picked Up", "location": "Chennai Sender Address"},
+        headers=admin_headers
+    )
+    assert res_pickup.status_code == 200
     update_payload = {
         "status": "In Transit",
         "location": "Vellore Highway Sorting Facility"
     }
-    res_update = client.put("/api/parcels/1/status", json=update_payload, headers=deliv_headers)
-    print(f">> 2.3 Delivery Agent Updating Status: HTTP {res_update.status_code}")
+    res_update = client.put("/api/parcels/1/status", json=update_payload, headers=admin_headers)
     assert res_update.status_code == 200
     updated_parcel = res_update.json()
     assert updated_parcel["status"] == "In Transit"
     assert updated_parcel["location"] == "Vellore Highway Sorting Facility"
-    print(f"   Updated Status: {updated_parcel['status']} at {updated_parcel['location']}")
 
-    # 2.4 Update to 'Delivered'
+    # 2.5 Update to 'Delivered'
     delivered_payload = {
         "status": "Delivered",
         "location": "Bengaluru Central Office"
     }
+    res_warehouse = client.put(
+        "/api/parcels/1/status",
+        json={"status": "At Warehouse", "location": "Bengaluru Warehouse"},
+        headers=admin_headers
+    )
+    assert res_warehouse.status_code == 200
+    res_out = client.put(
+        "/api/parcels/1/status",
+        json={"status": "Out for Delivery", "location": "Bengaluru Depot"},
+        headers=admin_headers
+    )
+    assert res_out.status_code == 200
     res_deliv = client.put("/api/parcels/1/status", json=delivered_payload, headers=admin_headers)
     assert res_deliv.status_code == 200
     print(f">> 2.4 Admin Marks 'Delivered': HTTP {res_deliv.status_code}")

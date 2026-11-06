@@ -86,6 +86,7 @@ def run_full_lifecycle_test():
         "sender_phone": "9820011223",
         "receiver_name": "Meera Patel",
         "receiver_phone": "9833445566",
+        "receiver_address": "701, Koramangala Main Road",
         "source_city": "Mumbai",
         "destination_city": "Bengaluru",
         "parcel_type": "Fragile",
@@ -99,6 +100,7 @@ def run_full_lifecycle_test():
     expected_charge = 150.0  # 7.5 * 20
     assert parcel["charge"] == expected_charge, f"Expected {expected_charge}, got {parcel['charge']}"
     assert parcel["status"] == "Booked"
+    assert parcel["receiver_address"] == "701, Koramangala Main Road"
     print(f"  [PASS] Parcel booked: {tracking_id} (ID: {parcel_id})")
     print(f"         Weight: {weight} kg -> Verified Charge: Rs.{parcel['charge']}")
 
@@ -125,10 +127,21 @@ def run_full_lifecycle_test():
     admin_token = admin_login.json()["access_token"]
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
-    # Fetch available delivery agents
+    deliv_login = client.post("/api/auth/login", json={
+        "email": "ravi.delivery@pcts.com",
+        "password": "Delivery@12345"
+    })
+    assert deliv_login.status_code == 200
+    deliv_token = deliv_login.json()["access_token"]
+    deliv_headers = {"Authorization": f"Bearer {deliv_token}"}
+
+    # Assign the parcel to the agent who will perform the delivery.
     agents = client.get("/api/deliveries/agents", headers=admin_headers).json()
-    assert len(agents) > 0
-    assigned_agent = agents[0]
+    assigned_agent = next(
+        (agent for agent in agents if agent["user_id"] == deliv_login.json()["user_id"]),
+        None
+    )
+    assert assigned_agent is not None
     agent_id = assigned_agent["delivery_person_id"]
 
     assign_resp = client.post("/api/deliveries", headers=admin_headers, json={
@@ -172,23 +185,32 @@ def run_full_lifecycle_test():
     assert r2.status_code == 200
     print("  [PASS] Milestone 2: 'In Transit' at Mumbai Central Logistics Hub")
 
-    # 5.3 Status: Out for Delivery
+    # 5.3 Status: At Warehouse
     r3 = client.put(f"/api/deliveries/{delivery_id}/status", headers=deliv_headers, json={
+        "status": "At Warehouse",
+        "location": "Bengaluru Electronic City Warehouse",
+        "notes": "Arrived at destination facility."
+    })
+    assert r3.status_code == 200
+    print("  [PASS] Milestone 3: 'At Warehouse' at Bengaluru Electronic City")
+
+    # 5.4 Status: Out for Delivery
+    r4 = client.put(f"/api/deliveries/{delivery_id}/status", headers=deliv_headers, json={
         "status": "Out for Delivery",
         "location": "Bengaluru Electronic City Delivery Branch",
         "notes": "Loaded for final doorstep delivery run."
     })
-    assert r3.status_code == 200
-    print("  [PASS] Milestone 3: 'Out for Delivery' at Bengaluru Electronic City")
+    assert r4.status_code == 200
+    print("  [PASS] Milestone 4: 'Out for Delivery' at Bengaluru Electronic City")
 
-    # 5.4 Status: Delivered (Terminal State)
-    r4 = client.put(f"/api/deliveries/{delivery_id}/status", headers=deliv_headers, json={
+    # 5.5 Status: Delivered (Terminal State)
+    r5 = client.put(f"/api/deliveries/{delivery_id}/status", headers=deliv_headers, json={
         "status": "Delivered",
         "location": "Customer Doorstep, Koramangala, Bengaluru",
         "notes": "Delivered successfully. Signed by recipient Meera Patel."
     })
-    assert r4.status_code == 200
-    print("  [PASS] Milestone 4: 'Delivered' at Customer Doorstep, Koramangala")
+    assert r5.status_code == 200
+    print("  [PASS] Milestone 5: 'Delivered' at Customer Doorstep, Koramangala")
 
     # -------------------------------------------------------------------------
     # STAGE 6: Payment Settlement
@@ -217,8 +239,8 @@ def run_full_lifecycle_test():
     assert final_track["is_delivered"] is True
 
     history = final_track.get("history") or final_track.get("events") or []
-    # Should have at least: Booked, Picked Up, In Transit, Out for Delivery, Delivered
-    assert len(history) >= 5, f"Expected >= 5 milestones, found {len(history)}"
+    # Should have at least: Booked, Picked Up, In Transit, At Warehouse, Out for Delivery, Delivered
+    assert len(history) >= 6, f"Expected >= 6 milestones, found {len(history)}"
 
     print(f"  [PASS] Final Status: {final_track['status']} (is_delivered: {final_track['is_delivered']})")
     print(f"  [PASS] Total MongoDB audit events recorded: {len(history)}")

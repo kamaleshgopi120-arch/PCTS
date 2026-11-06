@@ -126,6 +126,7 @@ def run_tests():
         "sender_phone": "9876543210",
         "receiver_name": "Suresh Babu",
         "receiver_phone": "9123456780",
+        "receiver_address": "12 Madurai Road",
         "source_city": "Chennai",
         "destination_city": "Madurai",
         "parcel_type": "General",

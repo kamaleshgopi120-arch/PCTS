@@ -193,7 +193,11 @@ def get_deliveries_report(db: Session = Depends(get_db)):
     for ag in agents:
         assigned = len(ag.deliveries)
         delivered = sum(1 for d in ag.deliveries if d.delivered_at is not None)
-        pending = assigned - delivered
+        pending = sum(
+            1 for d in ag.deliveries
+            if not d.parcel or not d.parcel.status
+            or d.parcel.status.status not in ("Delivered", "Returned")
+        )
         comp_rate = round((delivered / assigned * 100), 2) if assigned > 0 else 0.0
 
         agent_workloads.append(

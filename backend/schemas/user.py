@@ -49,6 +49,9 @@ class UserRegisterRequest(BaseModel):
     """
     Comprehensive registration schema that creates both the login account (`user`)
     and the associated profile (`customer` or `delivery_person`) in a single transaction.
+    
+    SECURITY FIX: Admin role self-registration is blocked - admin accounts must be 
+    created manually or by existing administrators.
     """
     email: EmailStr = Field(..., description="Login email address")
     password: str = Field(..., min_length=8, max_length=64, description="Password (at least 8 chars)")
@@ -73,6 +76,17 @@ class UserRegisterRequest(BaseModel):
         if not re.fullmatch(r"^\+?[0-9]{10,14}$", cleaned):
             raise ValueError("Phone number must contain between 10 and 14 digits and no letters.")
         return cleaned
+
+    @field_validator("role")
+    @classmethod
+    def validate_role_not_admin(cls, v: UserRole) -> UserRole:
+        """
+        SECURITY FIX (EC-ADMIN-SELF-REG): Prevent users from self-registering 
+        as administrators through the public registration endpoint.
+        """
+        if v == UserRole.ADMIN:
+            raise ValueError("Admin accounts cannot be self-registered. Please contact system administrator.")
+        return v
 
 
 class UserLogin(BaseModel):

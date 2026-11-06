@@ -17,6 +17,7 @@ from backend.models.user import User
 from backend.models.customer import Customer
 from backend.models.parcel import Parcel
 from backend.models.parcel_status import ParcelStatus
+from backend.models.delivery import Delivery
 from backend.models.payment import Payment
 from backend.schemas.parcel import (
     ParcelCreate,
@@ -24,10 +25,32 @@ from backend.schemas.parcel import (
     ParcelResponse,
     calculate_shipping_charge
 )
+from backend.schemas.delivery import ParcelDeliveryStatus, VALID_STATUS_TRANSITIONS
 from backend.security import get_current_user, require_staff
 from backend.mongo import log_tracking_event
 
 router = APIRouter(prefix="/api/parcels", tags=["Parcel Booking & Management"])
+
+
+def ensure_delivery_agent_owns_parcel(
+    parcel_id: int,
+    current_user: User,
+    db: Session
+) -> None:
+    if current_user.role != "delivery":
+        return
+
+    delivery_person = current_user.delivery_person
+    assignment = db.scalar(select(Delivery).where(Delivery.parcel_id == parcel_id))
+    if (
+        not delivery_person
+        or not assignment
+        or assignment.delivery_person_id != delivery_person.delivery_person_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not assigned to this parcel."
+        )
 
 
 # -----------------------------------------------------------------------------
@@ -48,15 +71,28 @@ def generate_unique_tracking_id(db: Session, max_retries: int = 5) -> str:
         if not exists:
             return candidate_id
 
-    # Fallback to high-precision timestamp if random retries collide
-    micro = datetime.now().strftime("%f")[:4]
-    return f"PCTS-{date_str}-{micro}"
+    existing_ids = set(db.scalars(
+        select(Parcel.tracking_id).where(Parcel.tracking_id.like(f"PCTS-{date_str}-%"))
+    ).all())
+    for suffix in range(1000, 10000):
+        candidate_id = f"PCTS-{date_str}-{suffix:04d}"
+        if candidate_id not in existing_ids:
+            return candidate_id
+
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="Unable to generate a unique tracking ID. Please try again."
+    )
 
 
 # -----------------------------------------------------------------------------
 # HELPER: Build ParcelResponse with Status and Payment Details
 # -----------------------------------------------------------------------------
 def build_parcel_response(parcel: Parcel) -> ParcelResponse:
+    delivery = parcel.delivery
+    agent = delivery.delivery_person if delivery else None
+    payment = parcel.payment
+
     return ParcelResponse(
         parcel_id=parcel.parcel_id,
         tracking_id=parcel.tracking_id,
@@ -65,6 +101,7 @@ def build_parcel_response(parcel: Parcel) -> ParcelResponse:
         sender_phone=parcel.sender_phone,
         receiver_name=parcel.receiver_name,
         receiver_phone=parcel.receiver_phone,
+        receiver_address=parcel.receiver_address,
         source_city=parcel.source_city,
         destination_city=parcel.destination_city,
         parcel_type=parcel.parcel_type,
@@ -74,8 +111,14 @@ def build_parcel_response(parcel: Parcel) -> ParcelResponse:
         booked_at=parcel.booked_at,
         status=parcel.status.status if parcel.status else "Booked",
         location=parcel.status.location if parcel.status else None,
-        payment_status=parcel.payment.payment_status if parcel.payment else "Pending",
-        payment_amount=float(parcel.payment.amount) if parcel.payment else float(parcel.charge)
+        payment_status=payment.payment_status if payment else "Pending",
+        payment_method=payment.payment_method if payment else "Cash on Delivery",
+        payment_amount=float(payment.amount) if payment else float(parcel.charge),
+        is_assigned=bool(delivery),
+        delivery_person_id=delivery.delivery_person_id if delivery else None,
+        delivery_person_name=agent.full_name if agent else None,
+        delivery_person_phone=agent.phone if agent else None,
+        delivery_id=delivery.delivery_id if delivery else None
     )
 
 
@@ -145,6 +188,7 @@ def book_parcel(
             sender_phone=parcel_in.sender_phone,
             receiver_name=parcel_in.receiver_name,
             receiver_phone=parcel_in.receiver_phone,
+            receiver_address=parcel_in.receiver_address,
             source_city=parcel_in.source_city,
             destination_city=parcel_in.destination_city,
             parcel_type=parcel_in.parcel_type.value,
@@ -165,12 +209,15 @@ def book_parcel(
         )
         db.add(initial_status)
 
-        # Step C: Initial payment record ('Pending')
+        # Step C: Initial payment record (Support COD, UPI, Card, Net Banking)
+        chosen_method = (parcel_in.payment_method or "Cash on Delivery").strip()
+        is_paid = (parcel_in.payment_status or "").strip().lower() == "paid"
         initial_payment = Payment(
             parcel_id=new_parcel.parcel_id,
             amount=calculated_charge,
-            payment_method="Cash on Delivery",
-            payment_status="Pending"
+            payment_method=chosen_method,
+            payment_status="Paid" if is_paid else "Pending",
+            paid_at=datetime.now() if is_paid else None
         )
         db.add(initial_payment)
 
@@ -178,16 +225,21 @@ def book_parcel(
         db.refresh(new_parcel)
 
         # Step D: Log initial milestone to MongoDB (NoSQL Event Store)
+        pay_note = f"Payment of Rs. {calculated_charge:.2f} settled via {chosen_method}." if is_paid else f"Payment method: {chosen_method} (Pending COD)."
         log_tracking_event(
             tracking_id=new_parcel.tracking_id,
             status="Booked",
             location=f"{parcel_in.source_city} Central Booking Office",
             updated_by=current_user.email,
-            notes="Parcel booked and shipment initiated."
+            notes=f"Parcel booked and shipment initiated. {pay_note}"
         )
 
         return build_parcel_response(new_parcel)
 
+    except HTTPException:
+        # Re-raise FastAPI HTTP exceptions — do NOT convert them to 500
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(
@@ -218,19 +270,25 @@ def list_parcels(
     - Delivery: Sees assigned deliveries.
     - Admin: Sees all parcels across the system.
     """
-    query = select(Parcel).join(Parcel.status)
-
-    if current_user.role == "customer":
-        if not current_user.customer:
+    # Fix: use outerjoin so parcels without a status record are still returned
+    if current_user.role == "delivery":
+        if not current_user.delivery_person:
             return []
-        query = query.where(Parcel.customer_id == current_user.customer.customer_id)
-
-    elif current_user.role == "delivery":
-        if current_user.delivery_person:
-            # Join with delivery assignment
-            query = query.join(Parcel.delivery).where(
-                Parcel.delivery.has(delivery_person_id=current_user.delivery_person.delivery_person_id)
-            )
+        # For delivery role: join both Delivery assignment and ParcelStatus
+        query = (
+            select(Parcel)
+            .join(Delivery, Delivery.parcel_id == Parcel.parcel_id)
+            .outerjoin(ParcelStatus, ParcelStatus.parcel_id == Parcel.parcel_id)
+            .where(Delivery.delivery_person_id == current_user.delivery_person.delivery_person_id)
+        )
+    else:
+        # For customer and admin: just outerjoin status for filtering
+        query = select(Parcel).outerjoin(ParcelStatus, ParcelStatus.parcel_id == Parcel.parcel_id)
+        if current_user.role == "customer":
+            if not current_user.customer:
+                return []
+            query = query.where(Parcel.customer_id == current_user.customer.customer_id)
+        # admin sees all parcels — no additional where clause needed
 
     # Optional Filters
     if status_filter:
@@ -277,6 +335,8 @@ def get_parcel(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access forbidden: You can only view your own parcels."
             )
+    elif current_user.role == "delivery":
+        ensure_delivery_agent_owns_parcel(parcel_id, current_user, db)
 
     return build_parcel_response(parcel)
 
@@ -303,28 +363,62 @@ def update_parcel_status_endpoint(
     - When new status is 'Delivered', automatically records `delivery.delivered_at = NOW()`.
     - Logs an append-only timeline event in MongoDB `tracking_history` collection.
     """
-    parcel = db.scalar(select(Parcel).where(Parcel.parcel_id == parcel_id))
+    parcel = db.scalar(
+        select(Parcel).where(Parcel.parcel_id == parcel_id).with_for_update()
+    )
     if not parcel:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Parcel not found."
         )
 
+    ensure_delivery_agent_owns_parcel(parcel_id, current_user, db)
+
+    current_status = parcel.status.status if parcel.status else "Booked"
+    target_status = status_update.status.strip()
+
+    # EC-22: Validate that the target status is a recognised milestone
+    valid_statuses = {s.value for s in ParcelDeliveryStatus}
+    if target_status not in valid_statuses:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid status value '{target_status}'. Allowed values: {sorted(valid_statuses)}"
+        )
+
+    # Completed states cannot be reopened.
+    if current_status in ("Delivered", "Returned"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Cannot update status of a delivered parcel."
+                if current_status == "Delivered"
+                else "Cannot update status of a returned parcel."
+            )
+        )
+
+    # EC-24: Enforce valid state transition hierarchy
+    allowed_transitions = VALID_STATUS_TRANSITIONS.get(current_status, [])
+    if target_status not in allowed_transitions:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid status transition from '{current_status}' to '{target_status}'."
+        )
+
     if not parcel.status:
         status_rec = ParcelStatus(
             parcel_id=parcel.parcel_id,
-            status=status_update.status,
+            status=target_status,
             location=status_update.location,
             updated_at=datetime.now()
         )
         db.add(status_rec)
     else:
-        parcel.status.status = status_update.status
+        parcel.status.status = target_status
         parcel.status.location = status_update.location
         parcel.status.updated_at = datetime.now()
 
     # If delivered, record delivery timestamp
-    if status_update.status.strip().title() == "Delivered":
+    if target_status.strip().title() == "Delivered":
         if parcel.delivery and parcel.delivery.delivered_at is None:
             parcel.delivery.delivered_at = datetime.now()
 
@@ -334,7 +428,7 @@ def update_parcel_status_endpoint(
     # Log milestone event into MongoDB
     log_tracking_event(
         tracking_id=parcel.tracking_id,
-        status=status_update.status,
+        status=target_status,
         location=status_update.location,
         updated_by=current_user.email,
         notes=status_update.notes

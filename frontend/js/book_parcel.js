@@ -6,8 +6,33 @@
  */
 
 document.addEventListener("DOMContentLoaded", () => {
+  console.info("PCTS booking form script loaded: 20261106-address-fix");
   initBookingPage();
 });
+
+// Global payment toggler
+window.togglePaymentInputs = function(method) {
+  const container = document.getElementById("onlinePaymentDetails");
+  const upiBox = document.getElementById("upiInputContainer");
+  const cardBox = document.getElementById("cardInputContainer");
+  const bankBox = document.getElementById("netBankingContainer");
+  const submitBtn = document.getElementById("bookParcelSubmitBtn");
+  const totalCostEl = document.getElementById("summaryTotalCost");
+  const amount = totalCostEl ? totalCostEl.textContent.trim() : "₹50.00";
+
+  if (!container) return;
+
+  if (method === "COD") {
+    container.style.display = "none";
+    if (submitBtn) submitBtn.textContent = "Confirm & Book Shipment (Pay COD) 🚀";
+  } else {
+    container.style.display = "block";
+    if (upiBox) upiBox.style.display = method === "UPI" ? "block" : "none";
+    if (cardBox) cardBox.style.display = method === "Card" ? "block" : "none";
+    if (bankBox) bankBox.style.display = method === "Net Banking" ? "block" : "none";
+    if (submitBtn) submitBtn.textContent = `Pay ${amount} & Book Shipment 🔒`;
+  }
+};
 
 function initBookingPage() {
   const form = document.getElementById("parcelBookingForm");
@@ -53,24 +78,26 @@ function initBookingPage() {
 
   // 2. Real-time rate calculator
   function updateRateEstimate() {
-    const weight = parseFloat(weightInput?.value) || 0;
+    const weightText = weightInput?.value.trim() || "";
+    const weight = parseFloat(weightText) || 0;
     const src = sourceCitySelect?.value;
     const dst = destCitySelect?.value;
 
-    const total = calculateShippingCharge(weight);
-    let base = 50.0;
-    let weightSurcharge = 0.0;
-
-    if (weight <= 1.0) {
-      base = total;
-      weightSurcharge = 0.0;
-    } else {
-      base = 50.0;
-      weightSurcharge = Math.max(0, total - 50.0);
+    const validWeight = /^\d+(?:\.\d{1,2})?$/.test(weightText) && weight > 0 && weight <= 500;
+    const total = validWeight ? calculateShippingCharge(weight) : 0;
+    let tier = "Enter a valid weight (up to 500 kg)";
+    if (validWeight && weight <= 1.0) {
+      tier = "₹50 flat up to 1 kg";
+    } else if (validWeight && weight <= 5.0) {
+      tier = "₹30 per kg";
+    } else if (validWeight && weight <= 20.0) {
+      tier = "₹20 per kg";
+    } else if (validWeight) {
+      tier = "₹15 per kg";
     }
 
-    if (summaryBaseRate) summaryBaseRate.textContent = formatCurrency(base);
-    if (summaryWeightCharge) summaryWeightCharge.textContent = formatCurrency(weightSurcharge);
+    if (summaryBaseRate) summaryBaseRate.textContent = tier;
+    if (summaryWeightCharge) summaryWeightCharge.textContent = formatCurrency(total);
     if (summaryTotalCost) summaryTotalCost.textContent = formatCurrency(total);
 
     if (summaryDistance) {
@@ -127,13 +154,13 @@ function initBookingPage() {
       return;
     }
 
-    if (sourceCity === destCity) {
+    if (sourceCity.trim().toLowerCase() === destCity.trim().toLowerCase()) {
       alert("Source city and destination city cannot be identical. Inter-city dispatch required.");
       return;
     }
 
-    if (isNaN(weight) || weight <= 0) {
-      alert("Weight must be greater than 0 kg.");
+    if (isNaN(weight) || weight <= 0 || weight > 500 || !/^\d+(?:\.\d{1,2})?$/.test(weightInput.value.trim())) {
+      alert("Weight must be greater than 0 and no more than 500 kg, with at most two decimal places.");
       return;
     }
 
@@ -142,16 +169,24 @@ function initBookingPage() {
     submitBtn.textContent = "Booking Shipment...";
 
     try {
+      // Resolve selected payment option
+      const selectedPayRadio = document.querySelector('input[name="paymentOption"]:checked');
+      const payOption = selectedPayRadio ? selectedPayRadio.value : "Cash on Delivery";
+      const isOnline = payOption !== "Cash on Delivery";
+
       const payload = {
         sender_name: senderName,
         sender_phone: senderPhone,
         receiver_name: receiverName,
         receiver_phone: receiverPhone,
+        receiver_address: receiverAddress,
         source_city: sourceCity,
         destination_city: destCity,
         parcel_type: category,
         weight_kg: weight,
-        description: description ? `${description} | Delivery to: ${receiverAddress}` : `Delivery to: ${receiverAddress}`
+        description: description || null,
+        payment_method: payOption,
+        payment_status: isOnline ? "Paid" : "Pending"
       };
 
       const result = await apiRequest("/api/parcels", {
@@ -163,6 +198,9 @@ function initBookingPage() {
       if (successAlert && successLink) {
         successLink.textContent = result.tracking_id;
         successLink.href = `track.html?id=${encodeURIComponent(result.tracking_id)}`;
+        const statusNote = isOnline ? "Payment: PAID online (Instant Settlement)" : "Payment: Cash on Delivery (COD)";
+        const msgEl = successAlert.querySelector("strong");
+        if (msgEl) msgEl.textContent = `Shipment Booked! [${statusNote}]`;
         successAlert.style.display = "flex";
         successAlert.scrollIntoView({ behavior: "smooth", block: "center" });
       }

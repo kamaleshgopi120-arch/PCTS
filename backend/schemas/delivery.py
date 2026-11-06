@@ -28,14 +28,14 @@ class ParcelDeliveryStatus(str, Enum):
 
 # Allowed state transitions (edge_case.md Section 5 - EC-23, EC-24)
 VALID_STATUS_TRANSITIONS: Dict[str, List[str]] = {
-    "Booked": ["Picked Up", "In Transit", "At Warehouse", "Out for Delivery", "Delivered"],
-    "Picked Up": ["In Transit", "At Warehouse", "Out for Delivery", "Delivered"],
-    "In Transit": ["At Warehouse", "Out for Delivery", "Delivered", "Failed Delivery"],
-    "At Warehouse": ["In Transit", "Out for Delivery", "Delivered"],
+    "Booked": ["Picked Up"],
+    "Picked Up": ["In Transit"],
+    "In Transit": ["At Warehouse"],
+    "At Warehouse": ["Out for Delivery"],
     "Out for Delivery": ["Delivered", "Failed Delivery"],
-    "Failed Delivery": ["At Warehouse", "Out for Delivery", "Returned"],
+    "Failed Delivery": ["Returned"],
     "Returned": [],
-    "Delivered": []  # Terminal state: EC-23 cannot update status of delivered parcel
+    "Delivered": []
 }
 
 
@@ -59,6 +59,14 @@ class DeliveryStatusUpdate(BaseModel):
         if cleaned.lower() not in status_map:
             raise ValueError("Invalid status value.")
         return status_map[cleaned.lower()]
+
+    @field_validator("location")
+    @classmethod
+    def validate_location(cls, v: str) -> str:
+        cleaned = v.strip()
+        if len(cleaned) < 2:
+            raise ValueError("Location must contain at least two non-whitespace characters.")
+        return cleaned
 
 
 class DeliveryPersonResponse(BaseModel):
@@ -87,7 +95,11 @@ class DeliveryResponse(BaseModel):
     location: Optional[str] = Field(default=None, description="Current parcel location")
     receiver_name: str = Field(..., description="Receiver name")
     receiver_phone: str = Field(..., description="Receiver contact")
+    receiver_address: Optional[str] = Field(default=None, description="Street address for delivery")
     destination_city: str = Field(..., description="Destination city")
     weight_kg: float = Field(..., description="Parcel weight in kg")
+    payment_status: Optional[str] = Field(default="Pending", description="Payment status (Pending, Paid)")
+    payment_method: Optional[str] = Field(default="Cash on Delivery", description="Payment method")
+    payment_amount: Optional[float] = Field(default=None, description="Amount due / collected in Rs.")
 
     model_config = ConfigDict(from_attributes=True)

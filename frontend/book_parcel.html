@@ -66,7 +66,7 @@
               </div>
               <div class="form-group">
                 <label class="form-label" for="senderPhone">Sender Phone</label>
-                <input type="tel" id="senderPhone" name="senderPhone" class="form-control" placeholder="10-digit number" maxlength="10" required>
+                <input type="tel" id="senderPhone" name="senderPhone" class="form-control" placeholder="10-14 digit number" maxlength="15" required>
               </div>
             </div>
 
@@ -99,7 +99,7 @@
               </div>
               <div class="form-group">
                 <label class="form-label" for="receiverPhone">Recipient Phone</label>
-                <input type="tel" id="receiverPhone" name="receiverPhone" class="form-control" placeholder="10-digit number" maxlength="10" required>
+                <input type="tel" id="receiverPhone" name="receiverPhone" class="form-control" placeholder="10-14 digit number" maxlength="15" required>
               </div>
             </div>
 
@@ -120,7 +120,7 @@
 
             <div class="form-group">
               <label class="form-label" for="receiverAddress">Delivery Address</label>
-              <textarea id="receiverAddress" name="receiverAddress" class="form-control" rows="2" placeholder="House/Flat, Landmark, Road, Pincode" required></textarea>
+              <textarea id="receiverAddress" name="receiverAddress" class="form-control" rows="2" maxlength="255" placeholder="House/Flat, Landmark, Road, Pincode" required></textarea>
             </div>
           </div>
 
@@ -135,22 +135,95 @@
                 <label class="form-label" for="categorySelect">Category</label>
                 <select id="categorySelect" name="category" class="form-control" required>
                   <option value="General">General Goods</option>
-                  <option value="Documents">Documents / Letter</option>
+                  <option value="Document">Documents / Letter</option>
                   <option value="Electronics">Electronics</option>
                   <option value="Fragile">Fragile / Glass</option>
-                  <option value="Clothing">Apparel & Textiles</option>
+                  <option value="Clothing">Apparel &amp; Textiles</option>
                 </select>
               </div>
 
               <div class="form-group">
                 <label class="form-label" for="weightInput">Weight (in kg)</label>
-                <input type="number" id="weightInput" name="weight" class="form-control" placeholder="e.g. 2.5" min="0.1" step="0.1" value="1.0" required>
+                <input type="number" id="weightInput" name="weight" class="form-control" placeholder="e.g. 2.5" min="0.01" max="500" step="0.01" value="1.0" required>
               </div>
             </div>
 
             <div class="form-group">
               <label class="form-label" for="parcelDescription">Package Contents & Notes</label>
               <input type="text" id="parcelDescription" name="description" class="form-control" placeholder="e.g. University Transcripts & Certificates">
+            </div>
+          </div>
+
+          <!-- Payment Method Card -->
+          <div class="card" id="paymentSection">
+            <h3 style="margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span>💳</span> 4. Payment Method &amp; Settlement
+            </h3>
+
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <label class="radio-tile" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); cursor: pointer; background: rgba(255,255,255,0.02);">
+                <input type="radio" name="paymentOption" value="Cash on Delivery" checked onchange="togglePaymentInputs('COD')">
+                <div>
+                  <strong style="color: #ffffff; display: block;">💵 Cash on Delivery (COD)</strong>
+                  <span style="font-size: 0.82rem; color: var(--text-secondary);">Pay cash or QR code to the executive upon pickup / doorstep delivery</span>
+                </div>
+              </label>
+
+              <label class="radio-tile" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); cursor: pointer; background: rgba(255,255,255,0.02);">
+                <input type="radio" name="paymentOption" value="UPI" onchange="togglePaymentInputs('UPI')">
+                <div>
+                  <strong style="color: #ffffff; display: block;">📱 Instant UPI / QR (Instant Paid)</strong>
+                  <span style="font-size: 0.82rem; color: var(--text-secondary);">Google Pay, PhonePe, Paytm, BHIM &bull; Instant Confirmation</span>
+                </div>
+              </label>
+
+              <label class="radio-tile" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); cursor: pointer; background: rgba(255,255,255,0.02);">
+                <input type="radio" name="paymentOption" value="Card" onchange="togglePaymentInputs('Card')">
+                <div>
+                  <strong style="color: #ffffff; display: block;">💳 Credit / Debit Card (Instant Paid)</strong>
+                  <span style="font-size: 0.82rem; color: var(--text-secondary);">Visa, MasterCard, RuPay with secure 128-bit encryption</span>
+                </div>
+              </label>
+
+              <label class="radio-tile" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); cursor: pointer; background: rgba(255,255,255,0.02);">
+                <input type="radio" name="paymentOption" value="Net Banking" onchange="togglePaymentInputs('Net Banking')">
+                <div>
+                  <strong style="color: #ffffff; display: block;">🏦 Net Banking (Instant Paid)</strong>
+                  <span style="font-size: 0.82rem; color: var(--text-secondary);">SBI, HDFC, ICICI, Axis Bank &amp; all major scheduled banks</span>
+                </div>
+              </label>
+            </div>
+
+            <!-- Online Payment Details Box (Shown when UPI or Card or Net Banking is picked) -->
+            <div id="onlinePaymentDetails" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(56, 189, 248, 0.05); border: 1px dashed var(--accent-cyan); border-radius: var(--radius-md);">
+              <div id="upiInputContainer" style="display: none;">
+                <label class="form-label" for="upiIdInput">UPI ID (VPA)</label>
+                <input type="text" id="upiIdInput" class="form-control" placeholder="e.g. mobile@upi or username@okhdfcbank" value="customer@okaxis">
+                <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; display: block;">Simulated UPI authorization will immediately settle this shipment charge.</span>
+              </div>
+              <div id="cardInputContainer" style="display: none;">
+                <label class="form-label" for="cardNumberInput">Card Number</label>
+                <input type="text" id="cardNumberInput" class="form-control" placeholder="4532 •••• •••• 8892" maxlength="19" value="4532 9981 2234 8892">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem;">
+                  <div>
+                    <label class="form-label" for="cardExpiryInput">Expiry</label>
+                    <input type="text" id="cardExpiryInput" class="form-control" placeholder="MM/YY" maxlength="5" value="12/28">
+                  </div>
+                  <div>
+                    <label class="form-label" for="cardCvvInput">CVV</label>
+                    <input type="password" id="cardCvvInput" class="form-control" placeholder="•••" maxlength="3" value="789">
+                  </div>
+                </div>
+              </div>
+              <div id="netBankingContainer" style="display: none;">
+                <label class="form-label" for="bankSelect">Select Bank</label>
+                <select id="bankSelect" class="form-control">
+                  <option value="HDFC">HDFC Bank</option>
+                  <option value="SBI">State Bank of India</option>
+                  <option value="ICICI">ICICI Bank</option>
+                  <option value="Axis">Axis Bank</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -163,15 +236,15 @@
 
             <div style="display: flex; flex-direction: column; gap: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1.25rem; margin-bottom: 1.25rem;">
               <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
-                <span style="color: var(--text-secondary);">Base Rate:</span>
-                <span id="summaryBaseRate" style="font-weight: 600;">₹50.00</span>
+                <span style="color: var(--text-secondary);">Pricing Tier:</span>
+                <span id="summaryBaseRate" style="font-weight: 600;">₹50 flat up to 1 kg</span>
               </div>
               <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
-                <span style="color: var(--text-secondary);">Weight Charge:</span>
+                <span style="color: var(--text-secondary);">Charge by Weight:</span>
                 <span id="summaryWeightCharge" style="font-weight: 600;">₹0.00</span>
               </div>
               <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
-                <span style="color: var(--text-secondary);">Estimated Distance:</span>
+                <span style="color: var(--text-secondary);">Route:</span>
                 <span id="summaryDistance" style="font-weight: 600;">Standard Regional</span>
               </div>
             </div>

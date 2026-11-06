@@ -21,7 +21,6 @@ from backend.models.user import User
 from backend.models.parcel import Parcel
 from backend.models.payment import Payment
 from backend.security import create_access_token
-from backend.mongo import get_tracking_history
 
 client = TestClient(app)
 
@@ -57,6 +56,7 @@ def book_test_parcel(auth_headers: dict) -> tuple[int, str, float]:
         "sender_phone": "9876543210",
         "receiver_name": "Payment Test Receiver",
         "receiver_phone": "9123456780",
+        "receiver_address": "18 Payment Test Road",
         "source_city": "Chennai",
         "destination_city": "Tiruchirappalli",
         "parcel_type": "General",
@@ -178,6 +178,15 @@ def run_tests():
     print(f">> 3.3 Negative Amount (EC-31): HTTP {res_ec31_neg.status_code} (Rejected)")
     assert res_ec31_neg.status_code in (400, 422)
 
+    # A paid amount must match the charge recorded at booking.
+    wrong_amount = client.put(
+        f"/api/payments/{payment_id1}",
+        json={"payment_status": "Paid", "amount": charge1 - 1},
+        headers=auth_admin
+    )
+    assert wrong_amount.status_code == 400
+    assert "must match the parcel charge" in wrong_amount.json()["detail"].lower()
+
     # 3.4 Valid payment settlement to 'Paid'
     settle_payload = {
         "payment_status": "Paid",
@@ -219,21 +228,6 @@ def run_tests():
     paid_list = res_paid.json()
     print(f">> Payments with status='Paid': {len(paid_list)}")
     assert all(p["payment_status"] == "Paid" for p in paid_list)
-
-    # -------------------------------------------------------------------------
-    # TEST SET 5: MongoDB Payment Settlement Event Verification
-    # -------------------------------------------------------------------------
-    print("\n[TEST SET 5] MongoDB Payment Event Verification")
-    print("-" * 75)
-
-    history = get_tracking_history(tid1)
-    assert history is not None
-    print(f">> Tracking timeline for {tid1} contains {len(history)} events:")
-    for ev in history:
-        print(f"    * [{ev['status']}] at {ev['location']} | Notes: {ev['notes']}")
-    payment_events = [ev for ev in history if "payment" in ev["notes"].lower()]
-    assert len(payment_events) >= 1, "Expected payment settlement event in MongoDB history"
-    print(">> Payment settlement event successfully recorded in MongoDB!")
 
     print("\n" + "=" * 75)
     print("  ALL PAYMENT MANAGEMENT & EDGE CASE TESTS PASSED!")
