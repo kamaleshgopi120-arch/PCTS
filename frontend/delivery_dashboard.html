@@ -24,7 +24,10 @@
       </ul>
 
       <div class="nav-auth">
-        <span style="font-size: 0.85rem; color: var(--text-secondary);">Agent: <strong id="agentHeaderName" style="color: #ffffff;">Ravi Kumar</strong></span>
+        <span class="user-badge-pill" id="agentNavBadge">
+          <span>🚚 Courier</span>
+          <strong id="agentHeaderName">Loading...</strong>
+        </span>
         <button onclick="logout()" class="btn btn-outline btn-sm" id="logoutBtn">Logout</button>
       </div>
     </nav>
@@ -39,8 +42,8 @@
             🛵
           </div>
           <div>
-            <h1 style="font-size: 1.6rem; margin-bottom: 0.2rem;" id="agentNameTitle">Ravi Kumar</h1>
-            <p style="font-size: 0.88rem; margin: 0;">Zone: <strong>Mumbai Central &bull; Sector 4</strong> &bull; Vehicle: <strong>MH-01-AB-1234 (Bike)</strong></p>
+            <h1 style="font-size: 1.6rem; margin-bottom: 0.2rem;" id="agentNameTitle">Ravi Varma</h1>
+            <p style="font-size: 0.88rem; margin: 0;" id="agentSubtitle">Zone: <strong>Active Courier Fleet</strong> &bull; Role: <strong>Verified Courier</strong></p>
           </div>
         </div>
 
@@ -158,7 +161,7 @@
     <p>&copy; 2026 PCTS Express Logistics Inc. All rights reserved.</p>
   </footer>
 
-  <script src="js/api.js"></script>
-  <script src="js/delivery.js"></script>
+  <script src="js/api.js?v=20261108-v3"></script>
+  <script src="js/delivery.js?v=20261108-v3"></script>
 </body>
 </html>

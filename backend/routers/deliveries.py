@@ -37,6 +37,7 @@ from backend.security import (
 )
 from backend.schemas.delivery import (
     DeliveryCreate,
+    DeliveryPersonCreate,
     DeliveryStatusUpdate,
     DeliveryPersonResponse,
     DeliveryResponse,
@@ -97,6 +98,62 @@ def list_delivery_agents(
         query = query.where(DeliveryPerson.is_active.is_(True))
     agents = db.scalars(query).all()
     return agents
+
+
+@router.post(
+    "/agents",
+    response_model=DeliveryPersonResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a new delivery agent into the logistics fleet (Admin only)",
+    dependencies=[Depends(require_admin)]
+)
+def create_delivery_agent(
+    payload: DeliveryPersonCreate,
+    db: Session = Depends(get_db)
+):
+    from backend.models.user import User
+    from backend.security import hash_password
+
+    # Check email duplicate
+    existing_user = db.scalar(select(User).where(User.email == payload.email.strip().lower()))
+    if existing_user:
+        raise HTTPException(status_code=400, detail="An account with this email address already exists.")
+
+    new_user = User(
+        email=payload.email.strip().lower(),
+        password_hash=hash_password(payload.password or "Delivery@12345"),
+        role="delivery"
+    )
+    db.add(new_user)
+    db.flush()
+
+    new_agent = DeliveryPerson(
+        user_id=new_user.user_id,
+        full_name=payload.full_name.strip(),
+        phone=payload.phone.strip(),
+        vehicle_number=payload.vehicle_number.strip() if payload.vehicle_number else None,
+        is_active=True
+    )
+    db.add(new_agent)
+    db.commit()
+    db.refresh(new_agent)
+    return new_agent
+
+
+@router.put(
+    "/agents/{agent_id}/toggle-status",
+    response_model=DeliveryPersonResponse,
+    summary="Toggle active duty status of a delivery agent (Admin only)",
+    dependencies=[Depends(require_admin)]
+)
+def toggle_agent_status(agent_id: int, db: Session = Depends(get_db)):
+    agent = db.scalar(select(DeliveryPerson).where(DeliveryPerson.delivery_person_id == agent_id))
+    if not agent:
+        raise HTTPException(status_code=404, detail="Delivery agent profile not found.")
+    agent.is_active = not agent.is_active
+    db.commit()
+    db.refresh(agent)
+    return agent
 
 
 # -----------------------------------------------------------------------------
@@ -190,14 +247,6 @@ def assign_delivery(
             )
         )
 
-    # EC-26: Check if parcel already has an active delivery assignment
-    existing_delivery = db.scalar(select(Delivery).where(Delivery.parcel_id == payload.parcel_id))
-    if existing_delivery:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This parcel is already assigned to a delivery person."
-        )
-
     # EC-28: Verify delivery person exists and is active
     agent = db.scalar(select(DeliveryPerson).where(DeliveryPerson.delivery_person_id == payload.delivery_person_id))
     if not agent or not agent.is_active:
@@ -205,6 +254,29 @@ def assign_delivery(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Delivery person not found or inactive."
         )
+
+    # EC-26: Check if parcel already has an active delivery assignment
+    existing_delivery = db.scalar(select(Delivery).where(Delivery.parcel_id == payload.parcel_id))
+    if existing_delivery:
+        if existing_delivery.delivery_person_id == payload.delivery_person_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This parcel is already assigned to this delivery person."
+            )
+        # Reassign to new agent
+        existing_delivery.delivery_person_id = payload.delivery_person_id
+        existing_delivery.assigned_at = datetime.now()
+        db.commit()
+        db.refresh(existing_delivery)
+
+        log_tracking_event(
+            tracking_id=parcel.tracking_id,
+            status=current_status,
+            location=parcel.source_city,
+            updated_by=current_user.email,
+            notes=f"Reassigned to delivery executive: {agent.full_name} ({agent.phone})"
+        )
+        return build_delivery_response(existing_delivery)
 
     # Create delivery assignment
     new_delivery = Delivery(
@@ -480,6 +552,133 @@ def update_delivery_status(
         location=status_update.location,
         updated_by=current_user.email,
         notes=status_update.notes
+    )
+
+    return build_delivery_response(delivery)
+
+
+# -----------------------------------------------------------------------------
+# 6. COLLECT COD PAYMENT BY DELIVERY AGENT (POST /api/deliveries/{id}/collect-cod)
+# -----------------------------------------------------------------------------
+@router.post(
+    "/collect-cod/{tracking_id}",
+    response_model=DeliveryResponse,
+    summary="Record Cash on Delivery (COD) collection by tracking ID"
+)
+def collect_cod_by_tracking_id(
+    tracking_id: str,
+    current_user: User = Depends(require_staff),
+    db: Session = Depends(get_db)
+):
+    cleaned_id = tracking_id.strip().upper()
+    parcel = db.scalar(select(Parcel).where(Parcel.tracking_id == cleaned_id).with_for_update())
+    if not parcel:
+        raise HTTPException(status_code=404, detail="Parcel not found.")
+
+    delivery = parcel.delivery
+    if not delivery:
+        agent_id = current_user.delivery_person.delivery_person_id if current_user.delivery_person else 1
+        delivery = Delivery(
+            parcel_id=parcel.parcel_id,
+            delivery_person_id=agent_id,
+            assigned_at=datetime.now()
+        )
+        db.add(delivery)
+        db.flush()
+
+    if not parcel.payment:
+        from backend.models.payment import Payment
+        parcel.payment = Payment(
+            parcel_id=parcel.parcel_id,
+            amount=parcel.charge,
+            payment_method="Cash on Delivery",
+            payment_status="Paid",
+            paid_at=datetime.now()
+        )
+        db.add(parcel.payment)
+    else:
+        parcel.payment.payment_status = "Paid"
+        parcel.payment.payment_method = "Cash on Delivery"
+        parcel.payment.paid_at = datetime.now()
+
+    db.commit()
+    db.refresh(delivery)
+
+    agent_name = delivery.delivery_person.full_name if delivery.delivery_person else current_user.email
+    log_tracking_event(
+        tracking_id=parcel.tracking_id,
+        status=parcel.status.status if parcel.status else "In Transit",
+        location=parcel.status.location if parcel.status else parcel.destination_city,
+        updated_by=current_user.email,
+        notes=f"Doorstep COD payment of Rs. {float(parcel.charge):.2f} collected in cash by courier agent {agent_name}."
+    )
+    return build_delivery_response(delivery)
+
+
+@router.post(
+    "/{delivery_id}/collect-cod",
+    response_model=DeliveryResponse,
+    summary="Record Cash on Delivery (COD) collection by assigned agent"
+)
+def collect_cod_payment(
+    delivery_id: int,
+    current_user: User = Depends(require_staff),
+    db: Session = Depends(get_db)
+):
+    """
+    Enables delivery agent to record cash collection from recipient at doorstep.
+    - Verifies parcel assignment ownership.
+    - Sets payment_status = 'Paid', payment_method = 'Cash on Delivery', paid_at = now.
+    - Records audit milestone in MongoDB event store.
+    """
+    delivery = db.scalar(
+        select(Delivery).where(Delivery.delivery_id == delivery_id).with_for_update()
+    )
+    if not delivery:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Delivery assignment not found."
+        )
+
+    if current_user.role == "delivery":
+        if (
+            not current_user.delivery_person
+            or delivery.delivery_person_id != current_user.delivery_person.delivery_person_id
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not assigned to this delivery."
+            )
+
+    parcel = delivery.parcel
+    if not parcel:
+        raise HTTPException(status_code=404, detail="Parcel not found.")
+
+    if not parcel.payment:
+        from backend.models.payment import Payment
+        parcel.payment = Payment(
+            parcel_id=parcel.parcel_id,
+            amount=parcel.charge,
+            payment_method="Cash on Delivery",
+            payment_status="Paid",
+            paid_at=datetime.now()
+        )
+        db.add(parcel.payment)
+    else:
+        parcel.payment.payment_status = "Paid"
+        parcel.payment.payment_method = "Cash on Delivery"
+        parcel.payment.paid_at = datetime.now()
+
+    db.commit()
+    db.refresh(delivery)
+
+    agent_name = delivery.delivery_person.full_name if delivery.delivery_person else current_user.email
+    log_tracking_event(
+        tracking_id=parcel.tracking_id,
+        status=parcel.status.status if parcel.status else "In Transit",
+        location=parcel.status.location if parcel.status else parcel.destination_city,
+        updated_by=current_user.email,
+        notes=f"Doorstep COD payment of Rs. {float(parcel.charge):.2f} collected in cash by courier agent {agent_name}."
     )
 
     return build_delivery_response(delivery)

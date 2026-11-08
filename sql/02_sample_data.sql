@@ -35,16 +35,23 @@ INSERT INTO user (user_id, email, password_hash, role) VALUES
 (1, 'admin@pcts.com', '$2b$12$JsjFyi3fAYV2rWbUulSlgeDgeiHK8YDVkj02cpmHkEy3pTDV5It1.', 'admin'),
 (2, 'arun.kumar@gmail.com', '$2b$12$LxTSuBeDYUZ4mINzLKAfGuyOp5CUCSKdo1vwmYjYVg6vKJqRxXkgW', 'customer'),
 (3, 'priya.sharma@yahoo.com', '$2b$12$Rz28iA7Akv0CloVr3rtAOu7enbiw3s6whNpfHB5vK9dzfkQ/xK/ry', 'customer'),
-(4, 'ravi.delivery@pcts.com', '$2b$12$BYQoQrYpfh.ZzWBF7PrQUuyZxRN.YIR1t0Yp57xX3yfuvgLT1Ewn6', 'delivery');
+(4, 'ravi.delivery@pcts.com', '$2b$12$BYQoQrYpfh.ZzWBF7PrQUuyZxRN.YIR1t0Yp57xX3yfuvgLT1Ewn6', 'delivery'),
+(5, 'suresh.delivery@pcts.com', '$2b$12$BYQoQrYpfh.ZzWBF7PrQUuyZxRN.YIR1t0Yp57xX3yfuvgLT1Ewn6', 'delivery'),
+(6, 'anjali.delivery@pcts.com', '$2b$12$BYQoQrYpfh.ZzWBF7PrQUuyZxRN.YIR1t0Yp57xX3yfuvgLT1Ewn6', 'delivery'),
+(7, 'sunil.delivery@pcts.com', '$2b$12$BYQoQrYpfh.ZzWBF7PrQUuyZxRN.YIR1t0Yp57xX3yfuvgLT1Ewn6', 'delivery'),
+(8, 'priya.admin@pcts.com', '$2b$12$JsjFyi3fAYV2rWbUulSlgeDgeiHK8YDVkj02cpmHkEy3pTDV5It1.', 'admin'),
+(9, 'vikram.admin@pcts.com', '$2b$12$JsjFyi3fAYV2rWbUulSlgeDgeiHK8YDVkj02cpmHkEy3pTDV5It1.', 'admin'),
+(10, 'kavita.nair@gmail.com', '$2b$12$LxTSuBeDYUZ4mINzLKAfGuyOp5CUCSKdo1vwmYjYVg6vKJqRxXkgW', 'customer');
 
 -- ============================================================================
 -- 2. INSERT INTO `customer`
 -- ============================================================================
--- Arun Kumar (user_id 2) and Priya Sharma (user_id 3)
+-- Arun Kumar (user_id 2), Priya Sharma (user_id 3), Kavita Nair (user_id 10)
 -- ============================================================================
 INSERT INTO customer (customer_id, user_id, full_name, phone, address, city) VALUES
 (1, 2, 'Arun Kumar', '9876543210', '12, 4th Main Road, Anna Nagar', 'Chennai'),
-(2, 3, 'Priya Sharma', '9876543222', '45, Palm Avenue, Whitefield', 'Bengaluru');
+(2, 3, 'Priya Sharma', '9876543222', '45, Palm Avenue, Whitefield', 'Bengaluru'),
+(3, 10, 'Kavita Nair', '9876540001', '88, Marine Drive, Fort Kochi', 'Kochi');
 
 -- ============================================================================
 -- 3. INSERT INTO `delivery_person`
@@ -52,7 +59,10 @@ INSERT INTO customer (customer_id, user_id, full_name, phone, address, city) VAL
 -- Ravi Varma (user_id 4)
 -- ============================================================================
 INSERT INTO delivery_person (delivery_person_id, user_id, full_name, phone, vehicle_number, is_active) VALUES
-(1, 4, 'Ravi Varma', '9876543333', 'TN-01-AB-1234', TRUE);
+(1, 4, 'Ravi Varma', '9876543333', 'TN-01-AB-1234', TRUE),
+(2, 5, 'Suresh Patil', '9876543334', 'MH-12-CD-5678', TRUE),
+(3, 6, 'Anjali Rao', '9876543335', 'KA-05-EF-9012', TRUE),
+(4, 7, 'Sunil Das', '9876543336', 'DL-01-GH-3456', TRUE);
 
 -- ============================================================================
 -- 4. INSERT INTO `parcel`

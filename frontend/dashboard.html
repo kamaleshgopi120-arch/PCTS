@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard — PCTS Operations</title>
-  <meta name="description" content="Manage logistics network, assign delivery agents, oversee parcel transit statuses, and analyze revenue metrics.">
+  <meta name="description"
+    content="Manage logistics network, assign delivery agents, oversee parcel transit statuses, and analyze revenue metrics.">
   <link rel="stylesheet" href="css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
+
 <body>
   <!-- Navigation Header -->
   <header>
@@ -22,11 +25,14 @@
         <li><a href="dashboard.html" class="nav-link active" id="navDashboard">Dashboard</a></li>
         <li><a href="track.html" class="nav-link" id="navTrack">Track</a></li>
         <li><a href="book_parcel.html" class="nav-link" id="navBook">New Booking</a></li>
-        <li><a href="delivery_dashboard.html" class="nav-link" id="navDelivery">Delivery Agents</a></li>
+        <li><a href="admin_fleet.html" class="nav-link" id="navDelivery">Fleet & Agents</a></li>
       </ul>
 
       <div class="nav-auth">
-        <span style="font-size: 0.85rem; color: var(--text-secondary);">Logged as: <strong style="color: #ffffff;">Admin (HQ)</strong></span>
+        <span class="user-badge-pill" id="adminNavBadge">
+          <span>🛡️ Admin</span>
+          <strong id="adminNavName">Loading...</strong>
+        </span>
         <button onclick="logout()" class="btn btn-outline btn-sm" id="logoutBtn">Sign Out</button>
       </div>
     </nav>
@@ -34,7 +40,8 @@
 
   <main class="container">
     <!-- Top Action & Title Bar -->
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+    <div
+      style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
       <div>
         <h1>Operations Command Center</h1>
         <p>Live inventory, fleet distribution, and parcel status management</p>
@@ -85,18 +92,14 @@
           <button type="button" class="tab-btn active" data-filter="ALL" id="tabFilterAll">All Parcels</button>
           <button type="button" class="tab-btn" data-filter="Booked" id="tabFilterBooked">Booked</button>
           <button type="button" class="tab-btn" data-filter="In Transit" id="tabFilterTransit">In Transit</button>
-          <button type="button" class="tab-btn" data-filter="Out for Delivery" id="tabFilterOut">Out for Delivery</button>
+          <button type="button" class="tab-btn" data-filter="Out for Delivery" id="tabFilterOut">Out for
+            Delivery</button>
           <button type="button" class="tab-btn" data-filter="Delivered" id="tabFilterDelivered">Delivered</button>
         </div>
 
         <div style="display: flex; gap: 0.75rem; align-items: center;">
-          <input 
-            type="text" 
-            class="form-control" 
-            id="adminTableSearch" 
-            placeholder="Search by ID, name, city..." 
-            style="width: 240px; padding: 0.45rem 0.85rem;"
-          >
+          <input type="text" class="form-control" id="adminTableSearch" placeholder="Search by ID, name, city..."
+            style="width: 240px; padding: 0.45rem 0.85rem;">
           <button class="btn btn-outline btn-sm" id="btnRefreshTable">🔄 Refresh</button>
         </div>
       </div>
@@ -128,7 +131,8 @@
       </div>
 
       <!-- Pagination / Footer Info -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+      <div
+        style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-secondary);">
         <span>Showing 1–4 of 1,428 shipments</span>
         <div style="display: flex; gap: 0.5rem;">
           <button class="btn btn-outline btn-sm" disabled>&larr; Previous</button>
@@ -157,16 +161,13 @@
             <label class="form-label" for="modalAgentSelect">Select Available Agent</label>
             <select id="modalAgentSelect" class="form-control" required>
               <option value="" disabled selected>Choose a delivery executive</option>
-              <option value="1">Ravi Kumar (Mumbai Central - Bike) &bull; 3 Active</option>
-              <option value="2">Suresh Patil (Pune Zone - Van) &bull; 1 Active</option>
-              <option value="3">Anjali Rao (Bengaluru South - EV Scooter) &bull; 0 Active</option>
-              <option value="4">Sunil Das (Delhi Hub - Bike) &bull; 2 Active</option>
             </select>
           </div>
 
           <div class="form-group">
             <label class="form-label" for="modalAssignNotes">Assignment Instructions (Optional)</label>
-            <input type="text" id="modalAssignNotes" class="form-control" placeholder="e.g. Priority door delivery before 4 PM">
+            <input type="text" id="modalAssignNotes" class="form-control"
+              placeholder="e.g. Priority door delivery before 4 PM">
           </div>
         </div>
 
@@ -183,7 +184,8 @@
     <div class="modal-content">
       <div class="modal-header">
         <h3 class="modal-title" id="paymentModalTitle">Update Payment Information</h3>
-        <button type="button" class="modal-close" onclick="closePaymentModal()" aria-label="Close Modal">&times;</button>
+        <button type="button" class="modal-close" onclick="closePaymentModal()"
+          aria-label="Close Modal">&times;</button>
       </div>
 
       <form id="paymentUpdateForm">
@@ -238,7 +240,8 @@
     <p>&copy; 2026 PCTS Express Logistics Inc. All rights reserved.</p>
   </footer>
 
-  <script src="js/api.js"></script>
-  <script src="js/dashboard.js"></script>
+  <script src="js/api.js?v=20261108-v3"></script>
+  <script src="js/dashboard.js?v=20261108-v3"></script>
 </body>
+
 </html>

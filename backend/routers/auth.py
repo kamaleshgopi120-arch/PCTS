@@ -179,6 +179,14 @@ def get_me(
         detail.phone = current_user.delivery_person.phone
         detail.vehicle_number = current_user.delivery_person.vehicle_number
 
+    elif current_user.role == "admin":
+        admin_names = {
+            "admin@pcts.com": "Super Admin (HQ)",
+            "priya.admin@pcts.com": "Priya Raman (Regional Admin)",
+            "vikram.admin@pcts.com": "Vikram Seth (Hub Admin)"
+        }
+        detail.full_name = admin_names.get(current_user.email, "System Administrator")
+
     return detail
 
 

@@ -90,6 +90,7 @@ The central table. Every booked parcel has one row here.
 | `sender_phone`     | VARCHAR(15)   | NOT NULL                                | Sender's phone number                    |
 | `receiver_name`    | VARCHAR(100)  | NOT NULL                                | Name of the person receiving the parcel  |
 | `receiver_phone`   | VARCHAR(15)   | NOT NULL                                | Receiver's phone number                  |
+| `receiver_address`| VARCHAR(255)  | NULL                                    | Street address for delivery               |
 | `source_city`      | VARCHAR(50)   | NOT NULL                                | City where parcel is picked up           |
 | `destination_city` | VARCHAR(50)   | NOT NULL                                | City where parcel is delivered           |
 | `parcel_type`      | VARCHAR(50)   | NOT NULL                                | Type (e.g., Document, Electronics, Fragile) |

@@ -44,8 +44,8 @@ Functional requirements describe the **features and actions** the system must su
 |-------|----------------------------------------------------------------------------------|
 | FR-11 | A customer can book a new parcel by filling in sender, receiver, and parcel info.|
 | FR-12 | The system must automatically generate a unique Tracking ID when a parcel is booked.|
-| FR-13 | Parcel information must include: sender name, receiver name, receiver phone,      |
-|       | source city, destination city, parcel type, weight, and description.             |
+| FR-13 | Parcel information must include: sender name, receiver name and phone, delivery address, |
+|       | source city, destination city, parcel type, weight, and description.                    |
 | FR-14 | The system must calculate delivery charges based on parcel weight.               |
 | FR-15 | Admin can view all parcels in the system.                                        |
 | FR-16 | Admin can view the details of a specific parcel.                                 |

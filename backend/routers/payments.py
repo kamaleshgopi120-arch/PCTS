@@ -347,16 +347,20 @@ def settle_payment_online(
 
     payment = parcel.payment
     if not payment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Payment record not found for this parcel."
+        payment = Payment(
+            parcel_id=parcel.parcel_id,
+            amount=parcel.charge,
+            payment_method=payload.payment_method or "Cash on Delivery",
+            payment_status="Paid",
+            paid_at=datetime.now()
         )
+        db.add(payment)
+        db.commit()
+        db.refresh(payment)
+        return build_payment_response(payment)
 
     if payment.payment_status == "Paid":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Payment is already completed for this parcel."
-        )
+        return build_payment_response(payment)
 
     method = payload.payment_method or "UPI"
     payment.payment_method = method

@@ -39,6 +39,15 @@ VALID_STATUS_TRANSITIONS: Dict[str, List[str]] = {
 }
 
 
+class DeliveryPersonCreate(BaseModel):
+    """Schema for registering a new delivery executive (Admin only)."""
+    full_name: str = Field(..., min_length=2, max_length=100, description="Full name of delivery agent")
+    phone: str = Field(..., min_length=10, max_length=15, description="Contact phone number")
+    vehicle_number: Optional[str] = Field(default=None, max_length=30, description="Vehicle plate number")
+    email: str = Field(..., max_length=100, description="Login email address")
+    password: Optional[str] = Field(default="Delivery@12345", min_length=6, description="Initial account password")
+
+
 class DeliveryCreate(BaseModel):
     """Schema for assigning a parcel to a delivery person (EC-26, EC-27, EC-28, EC-29)."""
     parcel_id: int = Field(..., gt=0, description="ID of parcel to assign")

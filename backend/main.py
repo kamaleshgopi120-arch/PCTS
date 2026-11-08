@@ -21,8 +21,9 @@ How to run this server:
 """
 
 from datetime import datetime
-from fastapi import FastAPI, Depends
-from fastapi.responses import JSONResponse
+import os
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from backend.database import get_db
@@ -51,53 +52,131 @@ register_exception_handlers(app)
 
 
 # -----------------------------------------------------------------------------
-# STARTUP: ENSURE DEMO ACCOUNTS HAVE VALID PASSWORDS
+# STARTUP: ENSURE DEMO ACCOUNTS HAVE VALID PASSWORDS & MULTIPLE PROFILES
 # -----------------------------------------------------------------------------
 @app.on_event("startup")
 def ensure_default_demo_users():
     """
-    Ensure standard demo accounts (Customer, Admin, Delivery Agent) have valid,
-    working password hashes in the database for immediate testing and grading.
+    Ensure multiple standard demo accounts (Admins, Delivery Agents, Customers)
+    have valid, working records and profiles in MySQL for testing and evaluation.
     """
     try:
         from backend.models.user import User
+        from backend.models.customer import Customer
+        from backend.models.delivery_person import DeliveryPerson
         from backend.security import hash_password, verify_password
         from sqlalchemy import select
-        from backend.database import SessionLocal  # Fix: import SessionLocal before use
+        from backend.database import SessionLocal
 
-        demo_credentials = {
-            "arun.kumar@gmail.com": "Customer@12345",
-            "priya.sharma@yahoo.com": "Customer@12345",
-            "admin@pcts.com": "Admin@12345",
-            "ravi.delivery@pcts.com": "Delivery@12345"
-        }
+        # 1. Admins
+        admins = [
+            ("admin@pcts.com", "Admin@12345"),
+            ("priya.admin@pcts.com", "Admin@12345"),
+            ("vikram.admin@pcts.com", "Admin@12345")
+        ]
+
+        # 2. Delivery Agents
+        agents = [
+            ("ravi.delivery@pcts.com", "Delivery@12345", "Ravi Varma", "9876543333", "TN-01-AB-1234"),
+            ("suresh.delivery@pcts.com", "Delivery@12345", "Suresh Patil", "9876543334", "MH-12-CD-5678"),
+            ("anjali.delivery@pcts.com", "Delivery@12345", "Anjali Rao", "9876543335", "KA-05-EF-9012"),
+            ("sunil.delivery@pcts.com", "Delivery@12345", "Sunil Das", "9876543336", "DL-01-GH-3456")
+        ]
+
+        # 3. Customers
+        customers = [
+            ("arun.kumar@gmail.com", "Customer@12345", "Arun Kumar", "9876543210", "12, 4th Main Road, Anna Nagar", "Chennai"),
+            ("priya.sharma@yahoo.com", "Customer@12345", "Priya Sharma", "9876543222", "45, Palm Avenue, Whitefield", "Bengaluru"),
+            ("kavita.nair@gmail.com", "Customer@12345", "Kavita Nair", "9876540001", "88, Marine Drive, Fort Kochi", "Kochi")
+        ]
 
         db = SessionLocal()
         try:
-            for email, expected_pwd in demo_credentials.items():
+            # Upsert Admins
+            for email, pwd in admins:
                 user = db.scalar(select(User).where(User.email == email))
-                if user:
-                    if not verify_password(expected_pwd, user.password_hash):
-                        user.password_hash = hash_password(expected_pwd)
+                if not user:
+                    user = User(email=email, password_hash=hash_password(pwd), role="admin")
+                    db.add(user)
+                elif not verify_password(pwd, user.password_hash):
+                    user.password_hash = hash_password(pwd)
+            db.flush()
+
+            # Upsert Delivery Agents
+            for email, pwd, full_name, phone, vehicle in agents:
+                user = db.scalar(select(User).where(User.email == email))
+                if not user:
+                    user = User(email=email, password_hash=hash_password(pwd), role="delivery")
+                    db.add(user)
+                    db.flush()
+                elif not verify_password(pwd, user.password_hash):
+                    user.password_hash = hash_password(pwd)
+                
+                agent = db.scalar(select(DeliveryPerson).where(DeliveryPerson.user_id == user.user_id))
+                if not agent:
+                    agent = DeliveryPerson(
+                        user_id=user.user_id,
+                        full_name=full_name,
+                        phone=phone,
+                        vehicle_number=vehicle,
+                        is_active=True
+                    )
+                    db.add(agent)
+            db.flush()
+
+            # Upsert Customers
+            for email, pwd, full_name, phone, address, city in customers:
+                user = db.scalar(select(User).where(User.email == email))
+                if not user:
+                    user = User(email=email, password_hash=hash_password(pwd), role="customer")
+                    db.add(user)
+                    db.flush()
+                elif not verify_password(pwd, user.password_hash):
+                    user.password_hash = hash_password(pwd)
+                
+                cust = db.scalar(select(Customer).where(Customer.user_id == user.user_id))
+                if not cust:
+                    cust = Customer(
+                        user_id=user.user_id,
+                        full_name=full_name,
+                        phone=phone,
+                        address=address,
+                        city=city
+                    )
+                    db.add(cust)
+
             db.commit()
         finally:
             db.close()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[Warning] Demo users sync: {e}")
 
 
 # -----------------------------------------------------------------------------
-# ENDPOINT 1: Root / Welcome Endpoint
+# FRONTEND DIRECTORY PATH
+# -----------------------------------------------------------------------------
+frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+
+
+# -----------------------------------------------------------------------------
+# ENDPOINT 1: Root Website Entrypoint
 # -----------------------------------------------------------------------------
 @app.get(
     "/",
-    summary="Root Welcome Endpoint",
-    tags=["General"]
+    summary="Root Website Home Page",
+    include_in_schema=False
 )
 def read_root():
-    """
-    Returns a welcome message and basic links to the API documentation.
-    """
+    """Serves the main frontend website index.html."""
+    index_file = os.path.join(frontend_dir, "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"})
+    return RedirectResponse(url="/static/index.html")
+
+
+@app.get("/api-info", summary="API System Info", tags=["General"])
+def api_welcome_info():
+    """Returns basic system and documentation links as JSON."""
     return {
         "project": "Parcel and Courier Tracking System (PCTS)",
         "message": "Hello, PCTS! Welcome to the Parcel & Courier Tracking API.",
@@ -105,6 +184,15 @@ def read_root():
         "alternative_docs": "/redoc",
         "status": "online"
     }
+
+
+@app.get("/{page_name}.html", include_in_schema=False)
+def serve_html_page(page_name: str):
+    """Directly serves any frontend HTML page (e.g. login.html, dashboard.html)."""
+    file_path = os.path.join(frontend_dir, f"{page_name}.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"})
+    raise HTTPException(status_code=404, detail=f"Page '{page_name}.html' not found.")
 
 
 # -----------------------------------------------------------------------------
@@ -250,6 +338,13 @@ if os.path.exists(frontend_dir):
             return response
 
     app.mount("/static", FrontendStaticFiles(directory=frontend_dir, html=True), name="static")
+
+    css_path = os.path.join(frontend_dir, "css")
+    js_path = os.path.join(frontend_dir, "js")
+    if os.path.exists(css_path):
+        app.mount("/css", StaticFiles(directory=css_path), name="css")
+    if os.path.exists(js_path):
+        app.mount("/js", FrontendStaticFiles(directory=js_path), name="js")
 
 
 

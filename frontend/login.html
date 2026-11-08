@@ -42,12 +42,19 @@
       <!-- Quick Role Preset Selector for Convenience / Demo -->
       <div style="margin-bottom: 1.5rem; text-align: center;">
         <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">
-          Quick Role Selector
+          Select Portal Role & Demo Account
         </span>
-        <div class="tabs" role="tablist" id="roleSelectorTabs" style="width: 100%; justify-content: center;">
+        <div class="tabs" role="tablist" id="roleSelectorTabs" style="width: 100%; justify-content: center; margin-bottom: 0.75rem;">
           <button type="button" class="tab-btn active" id="roleCustomerBtn" onclick="selectRole('customer')">Customer</button>
           <button type="button" class="tab-btn" id="roleAdminBtn" onclick="selectRole('admin')">Admin</button>
           <button type="button" class="tab-btn" id="roleDeliveryBtn" onclick="selectRole('delivery')">Delivery Agent</button>
+        </div>
+
+        <div class="form-group" style="text-align: left; margin-bottom: 0.5rem;">
+          <label class="form-label" for="accountPresetSelect" style="font-size: 0.8rem; color: var(--text-muted);">Choose Active Demo Account</label>
+          <select id="accountPresetSelect" class="form-control" onchange="applyAccountPreset(this.value)">
+            <!-- Options dynamically loaded by auth.js -->
+          </select>
         </div>
       </div>
 
@@ -105,7 +112,7 @@
     <p>&copy; 2026 PCTS Express Logistics Inc. All rights reserved.</p>
   </footer>
 
-  <script src="js/api.js"></script>
-  <script src="js/auth.js"></script>
+  <script src="js/api.js?v=20261108-v3"></script>
+  <script src="js/auth.js?v=20261108-v3"></script>
 </body>
 </html>

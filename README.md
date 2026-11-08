@@ -116,7 +116,9 @@ PCTS/
 │   ├── 02_sample_data.sql          # Seed Records & Test Fixtures
 │   ├── 03_basic_queries.sql        # Standard Query Demonstrations
 │   ├── procedures.sql              # Stored Procedures, Functions & Triggers
-│   └── 05_indexes.sql              # B-Tree Indexes & Idempotent DDL
+│   ├── 05_indexes.sql              # B-Tree Indexes & Idempotent DDL
+│   └── migrations/
+│       └── 20261103_add_receiver_address.sql # Existing database migration
 ├── docs/                           # Documentation & Visual Architecture Models
 │   ├── class-diagram.jpg/.md       # UML Class Diagram & Specifications
 │   ├── er-diagram.jpg/.md          # Entity-Relationship (ER) Diagram
@@ -205,6 +207,11 @@ mysql -u root -p < sql/procedures.sql
 mysql -u root -p < sql/05_indexes.sql
 ```
 
+For an existing database, run `sql/migrations/20261103_add_receiver_address.sql`
+once before starting the updated application, then rerun `sql/procedures.sql`
+to refresh the sequential status-transition rules. Fresh databases already
+include the delivery-address column in `01_create_tables.sql`.
+
 *(MongoDB database and collections are created automatically on first connection).*
 
 ---
@@ -258,12 +265,12 @@ python backend/test_all.py
 16   Phase 22: Full Lifecycle E2E Integration                7.28s     [PASS]
 -------------------------------------------------------------------------------------
 Total Suites : 16
-Passed       : 16 / 16 (100.0%)
+Passed       : 17 / 17 (100.0%)
 Failed       : 0
 Total Time   : ~60 seconds
 =====================================================================================
 
-[OK] ALL 16 TEST SUITES PASSED FLAWLESSLY! ZERO REGRESSIONS DETECTED. [OK]
+[OK] ALL 17 TEST SUITES PASSED FLAWLESSLY! ZERO REGRESSIONS DETECTED. [OK]
 ```
 
 ---

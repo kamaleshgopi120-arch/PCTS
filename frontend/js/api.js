@@ -157,6 +157,20 @@ function formatDateTime(isoString) {
 }
 
 /**
+ * Format ISO datetime string into short date (e.g. Nov 8, 2026).
+ */
+function formatDate(isoString) {
+  if (!isoString) return "—";
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return isoString;
+  return d.toLocaleDateString("en-IN", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+/**
  * Display an alert banner on the page.
  */
 function showAlert(elementId, message, type = "danger") {
@@ -182,38 +196,110 @@ function hideAlert(elementId) {
 }
 
 /**
- * Update top navbar with logged-in user profile, role badge, and logout action.
+ * Update top navbar with dynamic role-specific navigation, user profile, role badge, and logout action.
  */
 function initNavbarAuth() {
   const user = getCurrentUser();
+  const token = getToken();
+  const currentPage = (window.location.pathname.split("/").pop() || "index.html").toLowerCase();
+
+  const brandLink = document.getElementById("brandLink") || document.querySelector(".nav-brand");
+  const navLinks = document.querySelector(".nav-links");
   const navAuth = document.querySelector(".nav-auth");
-  if (!navAuth) return;
 
-  if (user && getToken()) {
-    const roleBadges = {
-      customer: '<span class="badge badge-booked" style="margin-right: 0.5rem;">Customer</span>',
-      admin: '<span class="badge badge-pickedup" style="margin-right: 0.5rem;">Admin</span>',
-      delivery: '<span class="badge badge-delivered" style="margin-right: 0.5rem;">Delivery</span>'
-    };
+  if (!navLinks && !navAuth) return;
 
-    const roleBadge = roleBadges[user.role] || '';
-    const displayName = user.full_name || user.email.split('@')[0];
+  if (user && token) {
+    const role = (user.role || "").toLowerCase();
+    const displayName = user.full_name || (user.email ? user.email.split('@')[0] : 'User');
 
-    navAuth.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 0.75rem;">
-        ${roleBadge}
-        <span style="font-size: 0.88rem; color: var(--text-primary); font-weight: 600;">
-          ${displayName}
-        </span>
-        <button id="globalLogoutBtn" class="btn btn-outline btn-sm">
-          Sign Out
-        </button>
-      </div>
-    `;
+    // 1. Role-specific brand link
+    if (brandLink) {
+      if (role === "admin") {
+        brandLink.setAttribute("href", "dashboard.html");
+        const titleEl = brandLink.querySelector(".brand-title");
+        if (titleEl) titleEl.textContent = "PCTS Express • Admin";
+      } else if (role === "delivery") {
+        brandLink.setAttribute("href", "delivery_dashboard.html");
+        const titleEl = brandLink.querySelector(".brand-title");
+        if (titleEl) titleEl.textContent = "PCTS Express • Courier";
+      } else {
+        brandLink.setAttribute("href", "customer_dashboard.html");
+        const titleEl = brandLink.querySelector(".brand-title");
+        if (titleEl) titleEl.textContent = "PCTS Express • Portal";
+      }
+    }
 
-    const logoutBtn = document.getElementById("globalLogoutBtn");
-    if (logoutBtn) {
-      logoutBtn.addEventListener("click", () => logout());
+    // 2. Role-specific nav links
+    if (navLinks) {
+      if (role === "admin") {
+        navLinks.innerHTML = `
+          <li><a href="dashboard.html" class="nav-link ${currentPage === 'dashboard.html' ? 'active' : ''}" id="navDashboard">Operations Dashboard</a></li>
+          <li><a href="book_parcel.html" class="nav-link ${currentPage === 'book_parcel.html' ? 'active' : ''}" id="navBook">Book Parcel</a></li>
+          <li><a href="track.html" class="nav-link ${currentPage === 'track.html' ? 'active' : ''}" id="navTrack">Track Shipment</a></li>
+          <li><a href="admin_fleet.html" class="nav-link ${currentPage === 'admin_fleet.html' ? 'active' : ''}" id="navFleet">Fleet & Agents</a></li>
+        `;
+      } else if (role === "delivery") {
+        navLinks.innerHTML = `
+          <li><a href="delivery_dashboard.html" class="nav-link ${currentPage === 'delivery_dashboard.html' ? 'active' : ''}" id="navDelivery">My Delivery Queue</a></li>
+          <li><a href="track.html" class="nav-link ${currentPage === 'track.html' ? 'active' : ''}" id="navTrack">Track Shipment</a></li>
+        `;
+      } else {
+        // Customer
+        navLinks.innerHTML = `
+          <li><a href="customer_dashboard.html" class="nav-link ${currentPage === 'customer_dashboard.html' ? 'active' : ''}" id="navCustomerDashboard">My Shipments</a></li>
+          <li><a href="book_parcel.html" class="nav-link ${currentPage === 'book_parcel.html' ? 'active' : ''}" id="navBook">Book Shipment</a></li>
+          <li><a href="track.html" class="nav-link ${currentPage === 'track.html' ? 'active' : ''}" id="navTrack">Track Parcel</a></li>
+        `;
+      }
+    }
+
+    // 3. User profile and logout button
+    if (navAuth) {
+      let roleBadge = '';
+      if (role === "admin") roleBadge = '<span class="badge badge-pickedup">🛡️ Admin</span>';
+      else if (role === "delivery") roleBadge = '<span class="badge badge-delivered">🚚 Courier</span>';
+      else roleBadge = '<span class="badge badge-booked">👤 Customer</span>';
+
+      navAuth.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+          ${roleBadge}
+          <span style="font-size: 0.88rem; color: var(--text-primary); font-weight: 600;">
+            ${displayName}
+          </span>
+          <button id="globalLogoutBtn" class="btn btn-outline btn-sm">
+            Sign Out
+          </button>
+        </div>
+      `;
+
+      const logoutBtn = document.getElementById("globalLogoutBtn");
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => logout());
+      }
+    }
+
+  } else {
+    // Guest / Not logged in
+    if (brandLink) {
+      brandLink.setAttribute("href", "index.html");
+      const titleEl = brandLink.querySelector(".brand-title");
+      if (titleEl) titleEl.textContent = "PCTS Express";
+    }
+
+    if (navLinks) {
+      navLinks.innerHTML = `
+        <li><a href="index.html" class="nav-link ${currentPage === 'index.html' ? 'active' : ''}" id="navHome">Home</a></li>
+        <li><a href="track.html" class="nav-link ${currentPage === 'track.html' ? 'active' : ''}" id="navTrack">Track Parcel</a></li>
+        <li><a href="book_parcel.html" class="nav-link ${currentPage === 'book_parcel.html' ? 'active' : ''}" id="navBook">Book Shipment</a></li>
+      `;
+    }
+
+    if (navAuth) {
+      navAuth.innerHTML = `
+        <a href="login.html" class="btn btn-outline btn-sm" id="navLoginBtn">Sign In</a>
+        <a href="register.html" class="btn btn-primary btn-sm" id="navRegisterBtn">Create Account</a>
+      `;
     }
   }
 }

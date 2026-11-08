@@ -23,9 +23,15 @@ async function initAdminDashboard() {
   const currentUser = getCurrentUser();
   const token = getToken();
 
-  if (!token || !currentUser || currentUser.role !== "admin") {
-    alert("Administrative access required. Redirecting to login portal.");
+  if (!token || !currentUser) {
     window.location.href = "login.html";
+    return;
+  }
+
+  if (currentUser.role !== "admin") {
+    if (currentUser.role === "customer") window.location.href = "customer_dashboard.html";
+    else if (currentUser.role === "delivery") window.location.href = "delivery_dashboard.html";
+    else window.location.href = "login.html";
     return;
   }
 
@@ -188,7 +194,7 @@ function renderParcelsTable() {
       const matchSender = (p.sender_name || "").toLowerCase().includes(searchQuery);
       const matchReceiver = (p.receiver_name || "").toLowerCase().includes(searchQuery);
       const matchCity = (p.destination_city || "").toLowerCase().includes(searchQuery) ||
-                        (p.source_city || "").toLowerCase().includes(searchQuery);
+        (p.source_city || "").toLowerCase().includes(searchQuery);
       if (!matchTrack && !matchSender && !matchReceiver && !matchCity) {
         return false;
       }
@@ -238,22 +244,20 @@ function renderParcelsTable() {
           ${p.payment_status !== "Paid" ? `<button class="btn btn-outline btn-sm" style="margin-left: 0.5rem;" onclick="openPaymentModal('${p.tracking_id}', ${p.parcel_id}, '${p.payment_status}', ${p.payment_amount || p.charge})">Settle</button>` : ''}
         </td>
         <td>
-          ${
-            isAssigned
-              ? `<strong style="color: var(--accent-emerald);">✓ ${escapeHtml(agentName || 'Assigned')}</strong>`
-              : '<span class="badge badge-booked" style="font-size: 0.75rem;">Unassigned</span>'
-          }
+          ${isAssigned
+        ? `<strong style="color: var(--accent-emerald);">✓ ${escapeHtml(agentName || 'Assigned')}</strong>`
+        : '<span class="badge badge-booked" style="font-size: 0.75rem;">Unassigned</span>'
+      }
         </td>
         <td style="text-align: right;">
           <div style="display: flex; gap: 0.35rem; justify-content: flex-end; align-items: center;">
             <a href="track.html?id=${encodeURIComponent(p.tracking_id)}" class="btn btn-outline btn-sm" title="View tracking audit logs">Logs 📋</a>
-            ${
-              isCompleted
-                ? `<span class="badge badge-delivered" style="font-size: 0.75rem;">Done</span>`
-                : isAssigned
-                  ? `<button class="btn btn-outline btn-sm" style="color: var(--accent-cyan); border-color: var(--accent-cyan);" onclick="openAssignModal('${p.tracking_id}', ${p.parcel_id}, ${deliveryId || ''}, ${agentId || ''})" title="Reassign agent">Reassign 🔄</button>`
-                  : `<button class="btn btn-primary btn-sm" onclick="openAssignModal('${p.tracking_id}', ${p.parcel_id})">Assign 🚚</button>`
-            }
+            ${isCompleted
+        ? `<span class="badge badge-delivered" style="font-size: 0.75rem;">Done</span>`
+        : isAssigned
+          ? `<button class="btn btn-outline btn-sm" style="color: var(--accent-cyan); border-color: var(--accent-cyan);" onclick="openAssignModal('${p.tracking_id}', ${p.parcel_id}, ${deliveryId || ''}, ${agentId || ''})" title="Reassign agent">Reassign 🔄</button>`
+          : `<button class="btn btn-primary btn-sm" onclick="openAssignModal('${p.tracking_id}', ${p.parcel_id})">Assign 🚚</button>`
+      }
           </div>
         </td>
       </tr>
@@ -322,7 +326,14 @@ function setupAssignModal() {
     submitBtn.textContent = "Assigning...";
 
     try {
-      const deliveryId = window._currentReassignDeliveryId;
+      let deliveryId = window._currentReassignDeliveryId;
+      if (!deliveryId && Array.isArray(allDeliveries)) {
+        const found = allDeliveries.find(d => d.parcel_id === parcelId);
+        if (found) {
+          deliveryId = found.delivery_id;
+        }
+      }
+
       if (deliveryId) {
         await apiRequest(`/api/deliveries/${deliveryId}/reassign`, {
           method: "PUT",
@@ -440,7 +451,10 @@ function setupPaymentModal() {
 }
 
 // Global modal triggers for HTML onclick compatibility
-window.openAssignModal = function(trackingId, parcelId, deliveryId, currentAgentId) {
+window.openAssignModal = function (trackingId, parcelId, deliveryId, currentAgentId) {
+  if (!allAgents || allAgents.length === 0) {
+    loadAgents();
+  }
   window._currentReassignDeliveryId = deliveryId || null;
   const trackingIdInput = document.getElementById("modalTrackingId");
   const modalTitle = document.getElementById("assignModalTitle");
@@ -461,28 +475,28 @@ window.openAssignModal = function(trackingId, parcelId, deliveryId, currentAgent
   if (modal) modal.classList.add("active");
 };
 
-window.closeAssignModal = function() {
+window.closeAssignModal = function () {
   window._currentReassignDeliveryId = null;
   const modal = document.getElementById("assignModal");
   if (modal) modal.classList.remove("active");
 };
 
-window.openPaymentModal = function(trackingId, parcelId, currentStatus, currentAmount) {
+window.openPaymentModal = function (trackingId, parcelId, currentStatus, currentAmount) {
   const trackingIdInput = document.getElementById("paymentTrackingId");
   const parcelIdInput = document.getElementById("paymentParcelId");
   const amountInput = document.getElementById("paymentAmount");
   const statusSelect = document.getElementById("paymentStatus");
-  
+
   if (trackingIdInput) trackingIdInput.value = trackingId;
   if (parcelIdInput) parcelIdInput.value = parcelId;
   if (amountInput) amountInput.value = currentAmount || 0;
   if (statusSelect) statusSelect.value = currentStatus || "Pending";
-  
+
   const modal = document.getElementById("paymentModal");
   if (modal) modal.classList.add("active");
 };
 
-window.closePaymentModal = function() {
+window.closePaymentModal = function () {
   const modal = document.getElementById("paymentModal");
   if (modal) modal.classList.remove("active");
 };

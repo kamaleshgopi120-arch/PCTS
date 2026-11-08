@@ -31,9 +31,15 @@ async function initDeliveryPortal() {
   const currentUser = getCurrentUser();
   const token = getToken();
 
-  if (!token || !currentUser || currentUser.role !== "delivery") {
-    alert("Delivery agent authentication required. Redirecting to login.");
+  if (!token || !currentUser) {
     window.location.href = "login.html";
+    return;
+  }
+
+  if (currentUser.role !== "delivery") {
+    if (currentUser.role === "admin") window.location.href = "dashboard.html";
+    else if (currentUser.role === "customer") window.location.href = "customer_dashboard.html";
+    else window.location.href = "login.html";
     return;
   }
 
@@ -54,10 +60,14 @@ async function initDeliveryPortal() {
 function renderAgentProfile(user) {
   const headerNameEl = document.getElementById("agentHeaderName");
   const titleNameEl = document.getElementById("agentNameTitle");
+  const subtitleEl = document.getElementById("agentSubtitle");
 
-  const name = user.full_name || user.email.split('@')[0];
+  const name = user.full_name || (user.email ? user.email.split('@')[0] : 'Agent');
   if (headerNameEl) headerNameEl.textContent = name;
   if (titleNameEl) titleNameEl.textContent = name;
+  if (subtitleEl) {
+    subtitleEl.innerHTML = `Fleet Agent: <strong>${escapeHtml(user.email || 'Active')}</strong> &bull; Status: <strong style="color: var(--accent-emerald);">Active Dispatch ✓</strong>`;
+  }
 }
 
 /**
@@ -153,7 +163,12 @@ function renderTasksTable() {
     const payAmount = d.payment_amount ?? 50;
     const payBadge = isPaid
       ? `<span class="badge badge-delivered" style="font-size: 0.78rem;">PAID ✓</span>`
-      : `<span class="badge badge-failed" style="font-size: 0.78rem;">COLLECT ${formatCurrency(payAmount)} COD</span>`;
+      : `<div style="display: flex; flex-direction: column; gap: 0.35rem;">
+           <span class="badge badge-failed" style="font-size: 0.75rem;">COLLECT ${formatCurrency(payAmount)} COD</span>
+           <button class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.55rem; color: var(--accent-emerald); border-color: var(--accent-emerald);" onclick="collectCashPayment(${d.delivery_id}, '${escapeHtml(d.tracking_id)}', ${payAmount})">
+             💵 Collect Cash
+           </button>
+         </div>`;
 
     return `
       <tr>
@@ -314,6 +329,34 @@ window.openUpdateModal = function(deliveryId, trackingId, currentStatus, default
 window.closeUpdateModal = function() {
   const modal = document.getElementById("updateStatusModal");
   if (modal) modal.classList.remove("active");
+};
+
+window.collectCashPayment = async function(deliveryId, trackingId, amount) {
+  const formattedAmt = parseFloat(amount || 0).toFixed(2);
+  if (!confirm(`Confirm collecting Rs. ${formattedAmt} in cash from recipient for parcel ${trackingId}?`)) {
+    return;
+  }
+  try {
+    if (deliveryId && Number(deliveryId) > 0) {
+      await apiRequest(`/api/deliveries/${deliveryId}/collect-cod`, { method: "POST" });
+    } else {
+      await apiRequest(`/api/deliveries/collect-cod/${encodeURIComponent(trackingId)}`, { method: "POST" });
+    }
+    alert(`Cash payment of Rs. ${formattedAmt} recorded successfully! Status updated to PAID ✓`);
+    await loadMyTasks();
+  } catch (err) {
+    // Resilient fallback directly to payment settlement route
+    try {
+      await apiRequest(`/api/payments/pay-online/${encodeURIComponent(trackingId)}`, {
+        method: "POST",
+        body: JSON.stringify({ payment_method: "Cash on Delivery" })
+      });
+      alert(`Cash payment of Rs. ${formattedAmt} recorded successfully! Status updated to PAID ✓`);
+      await loadMyTasks();
+    } catch (fallbackErr) {
+      alert(`Could not record cash collection: ${fallbackErr.message || err.message}`);
+    }
+  }
 };
 
 // Helper badge builder

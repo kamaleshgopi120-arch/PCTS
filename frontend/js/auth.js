@@ -19,13 +19,36 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+const PRESET_ACCOUNTS = {
+  admin: [
+    { label: "admin@pcts.com — Super Admin (National HQ)", email: "admin@pcts.com", pwd: "Admin@12345" },
+    { label: "priya.admin@pcts.com — Regional Operations Admin", email: "priya.admin@pcts.com", pwd: "Admin@12345" },
+    { label: "vikram.admin@pcts.com — Hub Logistics Admin", email: "vikram.admin@pcts.com", pwd: "Admin@12345" }
+  ],
+  delivery: [
+    { label: "ravi.delivery@pcts.com — Ravi Varma (Bike • TN-01-AB-1234)", email: "ravi.delivery@pcts.com", pwd: "Delivery@12345" },
+    { label: "suresh.delivery@pcts.com — Suresh Patil (Van • MH-12-CD-5678)", email: "suresh.delivery@pcts.com", pwd: "Delivery@12345" },
+    { label: "anjali.delivery@pcts.com — Anjali Rao (EV Scooter • KA-05-EF-9012)", email: "anjali.delivery@pcts.com", pwd: "Delivery@12345" },
+    { label: "sunil.delivery@pcts.com — Sunil Das (Express Van • DL-01-GH-3456)", email: "sunil.delivery@pcts.com", pwd: "Delivery@12345" }
+  ],
+  customer: [
+    { label: "arun.kumar@gmail.com — Arun Kumar (Chennai)", email: "arun.kumar@gmail.com", pwd: "Customer@12345" },
+    { label: "priya.sharma@yahoo.com — Priya Sharma (Bengaluru)", email: "priya.sharma@yahoo.com", pwd: "Customer@12345" },
+    { label: "kavita.nair@gmail.com — Kavita Nair (Kochi)", email: "kavita.nair@gmail.com", pwd: "Customer@12345" }
+  ]
+};
+
+let currentSelectedRole = "customer";
+
 /**
  * Select a predefined demo role and populate login form
  * @param {"customer" | "admin" | "delivery"} role 
  */
 function selectRole(role) {
+  currentSelectedRole = role;
   const emailInput = document.getElementById("loginEmail");
   const passwordInput = document.getElementById("loginPassword");
+  const presetSelect = document.getElementById("accountPresetSelect");
   const roleCustomerBtn = document.getElementById("roleCustomerBtn");
   const roleAdminBtn = document.getElementById("roleAdminBtn");
   const roleDeliveryBtn = document.getElementById("roleDeliveryBtn");
@@ -37,22 +60,38 @@ function selectRole(role) {
     hideAlert("loginAlert");
   }
 
-  if (role === "admin") {
-    if (roleAdminBtn) roleAdminBtn.classList.add("active");
-    if (emailInput) emailInput.value = "admin@pcts.com";
-    if (passwordInput) passwordInput.value = "Admin@12345";
-  } else if (role === "delivery") {
-    if (roleDeliveryBtn) roleDeliveryBtn.classList.add("active");
-    if (emailInput) emailInput.value = "ravi.delivery@pcts.com";
-    if (passwordInput) passwordInput.value = "Delivery@12345";
-  } else {
-    // Default to Customer
-    if (roleCustomerBtn) roleCustomerBtn.classList.add("active");
-    if (emailInput) emailInput.value = "arun.kumar@gmail.com";
-    if (passwordInput) passwordInput.value = "Customer@12345";
+  if (role === "admin" && roleAdminBtn) roleAdminBtn.classList.add("active");
+  else if (role === "delivery" && roleDeliveryBtn) roleDeliveryBtn.classList.add("active");
+  else if (roleCustomerBtn) roleCustomerBtn.classList.add("active");
+
+  const accounts = PRESET_ACCOUNTS[role] || PRESET_ACCOUNTS.customer;
+
+  if (presetSelect) {
+    presetSelect.innerHTML = accounts.map((acc, idx) => 
+      `<option value="${idx}">${acc.label}</option>`
+    ).join("");
+    presetSelect.value = "0";
+  }
+
+  if (accounts.length > 0) {
+    if (emailInput) emailInput.value = accounts[0].email;
+    if (passwordInput) passwordInput.value = accounts[0].pwd;
   }
 }
 window.selectRole = selectRole;
+
+function applyAccountPreset(index) {
+  const emailInput = document.getElementById("loginEmail");
+  const passwordInput = document.getElementById("loginPassword");
+  const accounts = PRESET_ACCOUNTS[currentSelectedRole] || PRESET_ACCOUNTS.customer;
+  const acc = accounts[parseInt(index, 10)] || accounts[0];
+
+  if (acc) {
+    if (emailInput) emailInput.value = acc.email;
+    if (passwordInput) passwordInput.value = acc.pwd;
+  }
+}
+window.applyAccountPreset = applyAccountPreset;
 
 /**
  * Initialize unified Login screen interactions & submissions
@@ -122,7 +161,7 @@ function initLoginPage() {
         } else if (fullProfile.role === "delivery") {
           window.location.href = "delivery_dashboard.html";
         } else {
-          window.location.href = "book_parcel.html";
+          window.location.href = "customer_dashboard.html";
         }
       }, 700);
 

@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Live Parcel Tracking — PCTS Express</title>
-  <meta name="description" content="Track your package status in real-time with step-by-step progress and granular MongoDB event timeline logs.">
+  <meta name="description"
+    content="Track your package status in real-time with step-by-step progress and granular MongoDB event timeline logs.">
   <link rel="stylesheet" href="css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
+
 <body>
   <!-- Navigation Header -->
   <header>
@@ -22,8 +25,6 @@
         <li><a href="index.html" class="nav-link" id="navHome">Home</a></li>
         <li><a href="track.html" class="nav-link active" id="navTrack">Track Parcel</a></li>
         <li><a href="book_parcel.html" class="nav-link" id="navBook">Book Shipment</a></li>
-        <li><a href="dashboard.html" class="nav-link" id="navAdmin">Admin</a></li>
-        <li><a href="delivery_dashboard.html" class="nav-link" id="navDelivery">Delivery Portal</a></li>
       </ul>
 
       <div class="nav-auth">
@@ -39,15 +40,8 @@
       <p>Enter your unique 8-character Tracking ID to trace your parcel's journey</p>
 
       <form id="trackSearchForm" class="search-box" style="margin-top: 1.5rem;" role="search">
-        <input 
-          type="text" 
-          id="trackSearchInput" 
-          name="id" 
-          placeholder="e.g. TRK7A8B9C or parcel UUID" 
-          required 
-          autocomplete="off"
-          aria-label="Tracking ID Search"
-        >
+        <input type="text" id="trackSearchInput" name="id" placeholder="e.g. TRK7A8B9C or parcel UUID" required
+          autocomplete="off" aria-label="Tracking ID Search">
         <button type="submit" class="btn btn-primary" id="trackSearchBtn">
           🔍 Track
         </button>
@@ -62,16 +56,23 @@
     <!-- Main Results Section (Visible when tracking details loaded) -->
     <div id="trackingResultContainer">
       <div class="alert alert-warning" id="trackingHistoryWarning" style="display: none;" role="alert"></div>
-      
+
       <!-- Top Overview Card -->
       <section class="card" id="trackingOverviewCard" style="margin-bottom: 2rem;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1.25rem;">
+        <div
+          style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1.25rem;">
           <div>
-            <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Tracking Number</span>
-            <h2 id="displayTrackingId" style="font-family: var(--font-display); letter-spacing: 0.05em; color: var(--accent-cyan);">TRK7A8B9C</h2>
+            <span
+              style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Tracking
+              Number</span>
+            <h2 id="displayTrackingId"
+              style="font-family: var(--font-display); letter-spacing: 0.05em; color: var(--accent-cyan);">TRK7A8B9C
+            </h2>
           </div>
           <div style="text-align: right;">
-            <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Current Status</span>
+            <span
+              style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Current
+              Status</span>
             <div id="displayStatusBadge" class="badge badge-intransit">
               <span class="badge-dot"></span>
               <span id="statusBadgeText">In Transit</span>
@@ -128,10 +129,14 @@
       <section class="card" id="paymentStatusCard" style="margin-bottom: 2rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
           <div>
-            <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Payment Details</span>
+            <span
+              style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Payment
+              Details</span>
             <div style="display: flex; align-items: baseline; gap: 0.75rem; margin-top: 0.25rem;">
-              <h3 id="displayPaymentAmount" style="color: var(--accent-emerald); font-size: 1.5rem; margin-bottom: 0;">₹50.00</h3>
-              <span id="displayPaymentMethod" style="font-size: 0.9rem; color: var(--text-secondary);">via Cash on Delivery</span>
+              <h3 id="displayPaymentAmount" style="color: var(--accent-emerald); font-size: 1.5rem; margin-bottom: 0;">
+                ₹50.00</h3>
+              <span id="displayPaymentMethod" style="font-size: 0.9rem; color: var(--text-secondary);">via Cash on
+                Delivery</span>
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -139,7 +144,8 @@
               <span class="badge-dot"></span>
               <span id="paymentBadgeText">PENDING</span>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" id="btnPayOnlineModal" style="display: none;" onclick="openTrackPayModal()">
+            <button type="button" class="btn btn-primary btn-sm" id="btnPayOnlineModal" style="display: none;"
+              onclick="openTrackPayModal()">
               💳 Pay Online Now
             </button>
           </div>
@@ -195,13 +201,15 @@
     <div class="modal-content" style="max-width: 460px;">
       <div class="modal-header">
         <h3 class="modal-title" id="trackPayTitle">Pay Delivery Charge</h3>
-        <button type="button" class="modal-close" onclick="closeTrackPayModal()" aria-label="Close Modal">&times;</button>
+        <button type="button" class="modal-close" onclick="closeTrackPayModal()"
+          aria-label="Close Modal">&times;</button>
       </div>
       <form id="trackPayForm">
         <div class="modal-body">
           <div style="text-align: center; margin-bottom: 1.25rem;">
             <span style="font-size: 0.85rem; color: var(--text-secondary);">Total Outstanding Bill</span>
-            <div id="modalPayAmountDisplay" style="font-size: 2.2rem; font-weight: 800; color: var(--accent-emerald);">₹50.00</div>
+            <div id="modalPayAmountDisplay" style="font-size: 2.2rem; font-weight: 800; color: var(--accent-emerald);">
+              ₹50.00</div>
           </div>
 
           <div class="form-group">
@@ -215,12 +223,14 @@
 
           <div id="trackUpiBox" class="form-group">
             <label class="form-label" for="trackUpiId">UPI VPA</label>
-            <input type="text" id="trackUpiId" class="form-control" placeholder="yourname@upi" value="customer@okhdfcbank">
+            <input type="text" id="trackUpiId" class="form-control" placeholder="yourname@upi"
+              value="customer@okhdfcbank">
           </div>
 
           <div id="trackCardBox" class="form-group" style="display: none;">
             <label class="form-label" for="trackCardNumber">Card Number</label>
-            <input type="text" id="trackCardNumber" class="form-control" placeholder="4532 •••• •••• 8892" value="4532 8812 3421 9901">
+            <input type="text" id="trackCardNumber" class="form-control" placeholder="4532 •••• •••• 8892"
+              value="4532 8812 3421 9901">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem;">
               <input type="text" class="form-control" placeholder="MM/YY" value="08/29">
               <input type="password" class="form-control" placeholder="CVV" value="123">
@@ -239,7 +249,8 @@
     <p>&copy; 2026 PCTS Express Logistics Inc. All rights reserved.</p>
   </footer>
 
-  <script src="js/api.js"></script>
-  <script src="js/track.js"></script>
+  <script src="js/api.js?v=20261108-v3"></script>
+  <script src="js/track.js?v=20261108-v3"></script>
 </body>
+
 </html>

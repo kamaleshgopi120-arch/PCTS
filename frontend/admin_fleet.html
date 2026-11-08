@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fleet & Agents Management — PCTS Admin</title>
+  <meta name="description" content="Manage logistics fleet, delivery executives, vehicle assignments, and courier duty statuses.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <!-- Navigation Header -->
+  <header>
+    <nav class="navbar" aria-label="Main Navigation">
+      <a href="dashboard.html" class="nav-brand" id="brandLink">
+        <div class="brand-icon">📦</div>
+        <span class="brand-title">PCTS Express &bull; Admin</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="dashboard.html" class="nav-link" id="navDashboard">Operations Dashboard</a></li>
+        <li><a href="book_parcel.html" class="nav-link" id="navBook">Book Parcel</a></li>
+        <li><a href="track.html" class="nav-link" id="navTrack">Track Shipment</a></li>
+        <li><a href="admin_fleet.html" class="nav-link active" id="navDelivery">Fleet & Agents</a></li>
+      </ul>
+
+      <div class="nav-auth">
+        <span class="user-badge-pill" id="adminNavBadge">
+          <span>🛡️ Admin</span>
+          <strong id="adminNavName">Loading...</strong>
+        </span>
+        <button onclick="logout()" class="btn btn-outline btn-sm" id="logoutBtn">Sign Out</button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- Top Action & Title Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+      <div>
+        <h1>Logistics Fleet & Delivery Executives</h1>
+        <p>Oversee courier staff, vehicle distribution, field duty statuses, and dispatch assignments</p>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem;">
+        <button type="button" class="btn btn-primary" onclick="openAddAgentModal()">
+          ➕ Register New Agent
+        </button>
+        <a href="dashboard.html" class="btn btn-outline">
+          &larr; Operations Center
+        </a>
+      </div>
+    </div>
+
+    <!-- Fleet KPI Stat Cards -->
+    <section class="stat-grid" aria-label="Fleet Metrics">
+      <div class="stat-card">
+        <div class="stat-label">Total Field Staff</div>
+        <div class="stat-value" id="valTotalStaff">0</div>
+        <span style="font-size: 0.82rem; color: var(--text-muted);">Registered executives</span>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Active on Duty</div>
+        <div class="stat-value" id="valActiveStaff" style="color: var(--accent-emerald);">0</div>
+        <span style="font-size: 0.82rem; color: var(--accent-emerald);">Ready for dispatch</span>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Bikes & Scooters</div>
+        <div class="stat-value" id="valBikesCount" style="color: var(--accent-cyan);">0</div>
+        <span style="font-size: 0.82rem; color: var(--text-muted);">Rapid city delivery</span>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Cargo Vans</div>
+        <div class="stat-value" id="valVansCount" style="color: var(--accent-purple);">0</div>
+        <span style="font-size: 0.82rem; color: var(--text-muted);">Heavy parcel dispatch</span>
+      </div>
+    </section>
+
+    <!-- Agents Table Section -->
+    <section class="card" style="margin-bottom: 2.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2>Delivery Personnel Directory</h2>
+          <p>Live active roster of all courier staff across regional sorting hubs.</p>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+          <input 
+            type="text" 
+            class="form-control" 
+            id="agentSearchInput" 
+            placeholder="Search by agent name, phone, vehicle..." 
+            style="width: 280px; padding: 0.45rem 0.85rem;"
+          >
+          <button class="btn btn-outline btn-sm" id="btnRefreshAgents">🔄 Refresh</button>
+        </div>
+      </div>
+
+      <!-- Responsive Table -->
+      <div class="table-responsive">
+        <table class="table" id="fleetTable">
+          <thead>
+            <tr>
+              <th scope="col">Agent ID</th>
+              <th scope="col">Executive Name</th>
+              <th scope="col">Phone Contact</th>
+              <th scope="col">Vehicle Registered</th>
+              <th scope="col">Assigned Tasks</th>
+              <th scope="col">Duty Status</th>
+              <th scope="col" style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="fleetTableBody">
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                Loading courier fleet directory...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Add New Agent Modal Dialog -->
+  <div class="modal-backdrop" id="addAgentModal" role="dialog" aria-modal="true" aria-labelledby="addAgentModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="addAgentModalTitle">Register New Delivery Executive</h3>
+        <button type="button" class="modal-close" onclick="closeAddAgentModal()" aria-label="Close Modal">&times;</button>
+      </div>
+
+      <form id="addAgentForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="newAgentName">Full Name</label>
+            <input type="text" id="newAgentName" class="form-control" placeholder="e.g. Ramesh Chandra" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="newAgentPhone">Phone Number</label>
+              <input type="tel" id="newAgentPhone" class="form-control" placeholder="e.g. 9876543399" maxlength="15" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="newAgentVehicle">Vehicle Plate & Model</label>
+              <input type="text" id="newAgentVehicle" class="form-control" placeholder="e.g. MH-02-EF-4321 (Bike)" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="newAgentEmail">Login Email Address</label>
+            <input type="email" id="newAgentEmail" class="form-control" placeholder="e.g. ramesh.delivery@pcts.com" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="newAgentPassword">Initial Password</label>
+            <input type="text" id="newAgentPassword" class="form-control" value="Delivery@12345" required>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeAddAgentModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnConfirmAddAgent">Register Executive 🚀</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>&copy; 2026 PCTS Express Logistics Inc. All rights reserved.</p>
+  </footer>
+
+  <script src="js/api.js?v=20261108-v4"></script>
+  <script src="js/admin_fleet.js?v=20261108-v4"></script>
+</body>
+</html>
+

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Dashboard — PCTS Express</title>
+  <meta name="description" content="View your booked shipments, live transit milestones, delivery receipts, and settlement statuses.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <!-- Navigation Header -->
+  <header>
+    <nav class="navbar" aria-label="Main Navigation">
+      <a href="customer_dashboard.html" class="nav-brand" id="brandLink">
+        <div class="brand-icon">📦</div>
+        <span class="brand-title">PCTS Express &bull; Customer</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="customer_dashboard.html" class="nav-link active" id="navCustomerDashboard">My Shipments</a></li>
+        <li><a href="book_parcel.html" class="nav-link" id="navBook">Book Shipment</a></li>
+        <li><a href="track.html" class="nav-link" id="navTrack">Track Parcel</a></li>
+      </ul>
+
+      <div class="nav-auth">
+        <span class="user-badge-pill" id="customerNavBadge">
+          <span>👤 Customer</span>
+          <strong id="customerNavName">Loading...</strong>
+        </span>
+        <button onclick="logout()" class="btn btn-outline btn-sm" id="logoutBtn">Sign Out</button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- Top Greeting Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+      <div>
+        <h1 id="welcomeCustomerHeading">My Shipments & Orders</h1>
+        <p>Monitor package transit status, live checkpoint updates, and billing receipts</p>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem;">
+        <a href="book_parcel.html" class="btn btn-primary" id="btnCustomerNewBooking">
+          ➕ Book New Shipment
+        </a>
+        <a href="track.html" class="btn btn-outline" id="btnCustomerTrack">
+          🔍 Track by ID
+        </a>
+      </div>
+    </div>
+
+    <!-- Customer KPI Stat Grid -->
+    <section class="stat-grid" aria-label="Customer Metrics">
+      <div class="stat-card" id="cardTotalBooked">
+        <div class="stat-label">Total Shipments</div>
+        <div class="stat-value" id="valTotalBooked">0</div>
+        <span style="font-size: 0.82rem; color: var(--text-muted);">Registered parcels</span>
+      </div>
+
+      <div class="stat-card" id="cardActiveTransit">
+        <div class="stat-label">Active in Transit</div>
+        <div class="stat-value" id="valActiveTransit" style="color: var(--accent-amber);">0</div>
+        <span style="font-size: 0.82rem; color: var(--accent-amber);">En route to destination</span>
+      </div>
+
+      <div class="stat-card" id="cardDelivered">
+        <div class="stat-label">Delivered</div>
+        <div class="stat-value" id="valDelivered" style="color: var(--accent-emerald);">0</div>
+        <span style="font-size: 0.82rem; color: var(--accent-emerald);">Safely fulfilled</span>
+      </div>
+
+      <div class="stat-card" id="cardTotalSpent">
+        <div class="stat-label">Total Shipping Value</div>
+        <div class="stat-value" id="valTotalSpent" style="color: var(--primary);">₹0.00</div>
+        <span style="font-size: 0.82rem; color: var(--text-muted);" id="valPendingCOD">All settlements clear</span>
+      </div>
+    </section>
+
+    <!-- Customer Parcels List Card -->
+    <section class="card" style="margin-bottom: 2.5rem;">
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="tabs" role="tablist" id="customerStatusFilterTabs">
+          <button type="button" class="tab-btn active" data-filter="ALL" id="tabCustomerAll">All Shipments</button>
+          <button type="button" class="tab-btn" data-filter="Booked" id="tabCustomerBooked">Booked</button>
+          <button type="button" class="tab-btn" data-filter="In Transit" id="tabCustomerTransit">In Transit</button>
+          <button type="button" class="tab-btn" data-filter="Out for Delivery" id="tabCustomerOut">Out for Delivery</button>
+          <button type="button" class="tab-btn" data-filter="Delivered" id="tabCustomerDelivered">Delivered</button>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+          <input 
+            type="text" 
+            class="form-control" 
+            id="customerTableSearch" 
+            placeholder="Search by Tracking ID, recipient, city..." 
+            style="width: 260px; padding: 0.45rem 0.85rem;"
+          >
+          <button class="btn btn-outline btn-sm" id="btnRefreshCustomerData">🔄 Refresh</button>
+        </div>
+      </div>
+
+      <!-- Parcels Table -->
+      <div class="table-responsive">
+        <table class="table" id="customerParcelsTable">
+          <thead>
+            <tr>
+              <th scope="col">Tracking ID</th>
+              <th scope="col">Recipient</th>
+              <th scope="col">Route</th>
+              <th scope="col">Type & Weight</th>
+              <th scope="col">Booked On</th>
+              <th scope="col">Status</th>
+              <th scope="col">Payment</th>
+              <th scope="col" style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="customerTableBody">
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                Loading your shipments from database...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Profile & Account Details Card -->
+    <section class="card" style="margin-bottom: 2rem;">
+      <h3 style="margin-bottom: 1rem;">Customer Profile</h3>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <div class="detail-label">Full Name</div>
+          <div class="detail-val" id="profileFullName">—</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Email Address</div>
+          <div class="detail-val" id="profileEmail">—</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Registered Phone</div>
+          <div class="detail-val" id="profilePhone">—</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">City & Address</div>
+          <div class="detail-val" id="profileCity">—</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Online Settlement Modal for Customer -->
+  <div class="modal-backdrop" id="custPayModal" role="dialog" aria-modal="true" aria-labelledby="custPayModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="custPayModalTitle">Online Payment Settlement</h3>
+        <button type="button" class="modal-close" onclick="closeCustPayModal()" aria-label="Close Modal">&times;</button>
+      </div>
+
+      <form id="custPayForm">
+        <div class="modal-body">
+          <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+            Instant settlement for your shipment. Updates immediately across logistics and dispatch checkpoints.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Tracking ID</label>
+            <input type="text" id="custPayTrackingId" class="form-control" readonly>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Total Payable Amount</label>
+            <input type="text" id="custPayAmount" class="form-control" readonly style="font-weight: 700; color: var(--primary);">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="custPaymentMethod">Select Payment Method</label>
+            <select id="custPaymentMethod" class="form-control" required>
+              <option value="UPI">UPI (Google Pay, PhonePe, Paytm)</option>
+              <option value="Card">Credit / Debit Card</option>
+              <option value="Net Banking">Net Banking (Instant Settlement)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeCustPayModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnConfirmCustPay">Confirm & Pay Now 🔒</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>&copy; 2026 PCTS Express Logistics Inc. All rights reserved.</p>
+  </footer>
+
+  <script src="js/api.js?v=20261108-v3"></script>
+  <script src="js/customer.js?v=20261108-v3"></script>
+</body>
+</html>
+
