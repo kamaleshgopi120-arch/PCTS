@@ -271,6 +271,20 @@ function setupCheckpointModal() {
       return;
     }
 
+    // Business Rule Check: Cannot mark Delivered if unpaid
+    const task = window._currentModalTask || myDeliveries.find(d => d.delivery_id === activeDeliveryId);
+    const isPaid = task && (task.payment_status || "").toLowerCase() === "paid";
+    const dueAmount = task ? (task.payment_amount ?? 50) : 50;
+
+    if (newStatus === "Delivered" && !isPaid) {
+      alert(
+        `⛔ ACTION BLOCKED: Payment Pending!\n\n` +
+        `You cannot mark this parcel as "Delivered" because payment of Rs. ${parseFloat(dueAmount).toFixed(2)} has NOT been collected yet.\n\n` +
+        `Please collect the Cash on Delivery (COD) payment first using the "Collect Cash Now" button.`
+      );
+      return;
+    }
+
     submitBtn.disabled = true;
     submitBtn.textContent = "Updating...";
 
@@ -300,18 +314,45 @@ function setupCheckpointModal() {
 // Global modal triggers for HTML onclick compatibility
 window.openUpdateModal = function(deliveryId, trackingId, currentStatus, defaultLocation) {
   activeDeliveryId = deliveryId;
+  const task = myDeliveries.find(d => d.delivery_id === deliveryId || d.tracking_id === trackingId);
+  window._currentModalTask = task;
+
   const trackingEl = document.getElementById("updateTrackingId");
   const statusEl = document.getElementById("newStatusSelect");
   const locEl = document.getElementById("checkpointLocationInput");
+  const warningEl = document.getElementById("modalPaymentWarning");
+  const warningText = document.getElementById("modalPaymentWarningText");
+  const btnCollectModal = document.getElementById("btnModalCollectCash");
 
   if (trackingEl) trackingEl.value = trackingId;
+
+  const isPaid = task && (task.payment_status || "").toLowerCase() === "paid";
+  const dueAmount = task ? (task.payment_amount ?? 50) : 50;
+
+  if (warningEl && warningText) {
+    if (!isPaid) {
+      warningEl.style.display = "block";
+      warningText.textContent = `Rs. ${parseFloat(dueAmount).toFixed(2)} COD payment has NOT been collected yet! You cannot mark this parcel as Delivered until payment is collected.`;
+      if (btnCollectModal) {
+        btnCollectModal.onclick = async () => {
+          await window.collectCashPayment(deliveryId, trackingId, dueAmount);
+        };
+      }
+    } else {
+      warningEl.style.display = "none";
+    }
+  }
 
   if (statusEl) {
     const nextStatuses = DELIVERY_STATUS_TRANSITIONS[currentStatus] || [];
     statusEl.replaceChildren(...nextStatuses.map(nextStatus => {
       const option = document.createElement("option");
       option.value = nextStatus;
-      option.textContent = nextStatus;
+      if (nextStatus === "Delivered" && !isPaid) {
+        option.textContent = "⛔ Delivered (Payment Pending — Collect COD First)";
+      } else {
+        option.textContent = nextStatus === "Delivered" ? "Delivered (Completed) ✓" : nextStatus;
+      }
       return option;
     }));
     statusEl.disabled = nextStatuses.length === 0;
@@ -329,6 +370,7 @@ window.openUpdateModal = function(deliveryId, trackingId, currentStatus, default
 window.closeUpdateModal = function() {
   const modal = document.getElementById("updateStatusModal");
   if (modal) modal.classList.remove("active");
+  window._currentModalTask = null;
 };
 
 window.collectCashPayment = async function(deliveryId, trackingId, amount) {
@@ -336,26 +378,64 @@ window.collectCashPayment = async function(deliveryId, trackingId, amount) {
   if (!confirm(`Confirm collecting Rs. ${formattedAmt} in cash from recipient for parcel ${trackingId}?`)) {
     return;
   }
-  try {
-    if (deliveryId && Number(deliveryId) > 0) {
+
+  let success = false;
+  let lastError = null;
+
+  // Attempt 1: Delivery ID endpoint
+  if (deliveryId && Number(deliveryId) > 0) {
+    try {
       await apiRequest(`/api/deliveries/${deliveryId}/collect-cod`, { method: "POST" });
-    } else {
-      await apiRequest(`/api/deliveries/collect-cod/${encodeURIComponent(trackingId)}`, { method: "POST" });
+      success = true;
+    } catch (e) {
+      lastError = e;
     }
-    alert(`Cash payment of Rs. ${formattedAmt} recorded successfully! Status updated to PAID ✓`);
-    await loadMyTasks();
-  } catch (err) {
-    // Resilient fallback directly to payment settlement route
+  }
+
+  // Attempt 2: By tracking ID endpoint
+  if (!success && trackingId) {
+    try {
+      await apiRequest(`/api/deliveries/collect-cod/${encodeURIComponent(trackingId)}`, { method: "POST" });
+      success = true;
+    } catch (e) {
+      lastError = e;
+    }
+  }
+
+  // Attempt 3: Online settlement gateway fallback
+  if (!success && trackingId) {
     try {
       await apiRequest(`/api/payments/pay-online/${encodeURIComponent(trackingId)}`, {
         method: "POST",
-        body: JSON.stringify({ payment_method: "Cash on Delivery" })
+        body: JSON.stringify({ payment_method: "Cash on Delivery", payment_status: "Paid" })
       });
-      alert(`Cash payment of Rs. ${formattedAmt} recorded successfully! Status updated to PAID ✓`);
-      await loadMyTasks();
-    } catch (fallbackErr) {
-      alert(`Could not record cash collection: ${fallbackErr.message || err.message}`);
+      success = true;
+    } catch (e) {
+      lastError = e;
     }
+  }
+
+  if (success) {
+    alert(`Cash payment of Rs. ${formattedAmt} recorded successfully! Status updated to PAID ✓`);
+    
+    // Update local state in modal if currently open
+    if (window._currentModalTask) {
+      window._currentModalTask.payment_status = "Paid";
+      const warningEl = document.getElementById("modalPaymentWarning");
+      if (warningEl) warningEl.style.display = "none";
+      const statusSelect = document.getElementById("newStatusSelect");
+      if (statusSelect) {
+        Array.from(statusSelect.options).forEach(opt => {
+          if (opt.value === "Delivered") {
+            opt.textContent = "Delivered (Completed) ✓";
+          }
+        });
+      }
+    }
+    
+    await loadMyTasks();
+  } else {
+    alert(`Could not record cash collection: ${lastError ? lastError.message : 'Unknown error'}`);
   }
 };
 

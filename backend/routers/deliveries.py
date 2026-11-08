@@ -519,6 +519,23 @@ def update_delivery_status(
             detail=f"Invalid status transition from '{current_status}' to '{target_status}'."
         )
 
+    # Business Rule: Delivery agent cannot mark parcel as Delivered if payment is pending (EC-COD)
+    if target_status == "Delivered":
+        is_paid = (
+            parcel.payment is not None
+            and parcel.payment.payment_status is not None
+            and parcel.payment.payment_status.strip().title() == "Paid"
+        )
+        if not is_paid:
+            due_amount = float(parcel.charge) if parcel.charge else 0.0
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Cannot mark parcel as Delivered because payment is pending (Rs. {due_amount:.2f} due). "
+                    "Please collect Cash on Delivery (COD) payment first using the 'Collect Cash' button."
+                )
+            )
+
     # Update parcel_status in MySQL
     if not parcel.status:
         parcel.status = ParcelStatus(
@@ -533,14 +550,9 @@ def update_delivery_status(
         parcel.status.location = status_update.location
         parcel.status.updated_at = datetime.now()
 
-    # If delivered, record delivery completion timestamp and auto-settle COD if pending
+    # If delivered, record delivery completion timestamp
     if target_status == "Delivered":
         delivery.delivered_at = datetime.now()
-        if parcel.payment and parcel.payment.payment_status != "Paid":
-            parcel.payment.payment_status = "Paid"
-            parcel.payment.paid_at = datetime.now()
-            if not parcel.payment.payment_method:
-                parcel.payment.payment_method = "Cash on Delivery"
 
     db.commit()
     db.refresh(delivery)

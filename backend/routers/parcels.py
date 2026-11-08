@@ -404,6 +404,20 @@ def update_parcel_status_endpoint(
             detail=f"Invalid status transition from '{current_status}' to '{target_status}'."
         )
 
+    # Business Rule: Cannot mark parcel as Delivered if payment is pending
+    if target_status.strip().title() == "Delivered":
+        is_paid = (
+            parcel.payment is not None
+            and parcel.payment.payment_status is not None
+            and parcel.payment.payment_status.strip().title() == "Paid"
+        )
+        if not is_paid:
+            due_amount = float(parcel.charge) if parcel.charge else 0.0
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot mark parcel as Delivered because payment is pending (Rs. {due_amount:.2f} due). Please collect payment first."
+            )
+
     if not parcel.status:
         status_rec = ParcelStatus(
             parcel_id=parcel.parcel_id,

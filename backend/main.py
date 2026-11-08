@@ -161,6 +161,8 @@ frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "fr
 # -----------------------------------------------------------------------------
 # ENDPOINT 1: Root Website Entrypoint
 # -----------------------------------------------------------------------------
+frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+
 @app.get(
     "/",
     summary="Root Website Home Page",
