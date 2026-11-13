@@ -43,6 +43,8 @@ DB_NAME = os.getenv("DB_NAME", "pcts_db")
 raw_db_url = os.getenv("DATABASE_URL")
 if raw_db_url:
     DATABASE_URL = raw_db_url
+    if str(DATABASE_URL).startswith("mysql://"):
+        DATABASE_URL = str(DATABASE_URL).replace("mysql://", "mysql+pymysql://", 1)
 else:
     DATABASE_URL = URL.create(
         drivername="mysql+pymysql",
@@ -53,15 +55,25 @@ else:
         database=DB_NAME
     )
 
+# Configure connect_args (SSL support for Cloud MySQL such as TiDB, Aiven, etc.)
+connect_args = {"connect_timeout": 10}
+url_str = str(DATABASE_URL).lower()
+if "tidbcloud.com" in url_str or "aivencloud.com" in url_str or "ssl" in url_str:
+    import ssl
+    ssl_ctx = ssl.create_default_context()
+    ssl_ctx.check_hostname = False
+    ssl_ctx.verify_mode = ssl.CERT_NONE
+    connect_args["ssl"] = ssl_ctx
+
 # 2. Create the SQLAlchemy Engine
 # `pool_pre_ping=True`: Checks if a MySQL connection is alive before using it.
 # `pool_size=5`, `max_overflow=10`: Controls the connection pool capacity.
-# `connect_timeout=5`: Prevents indefinite hangs if database is offline.
+# `connect_timeout=10`: Prevents indefinite hangs if database is offline.
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
     pool_recycle=3600,  # Recycle connections every hour to avoid MySQL timeout
-    connect_args={"connect_timeout": 5},
+    connect_args=connect_args,
     echo=False          # Set to True if you want to see every raw SQL statement in the terminal
 )
 

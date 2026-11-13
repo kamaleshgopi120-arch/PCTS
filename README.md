@@ -302,6 +302,16 @@ PCTS rigorously handles real-world distributed systems conditions as defined in 
 
 ---
 
+## 🚀 Deployment Options
+
+PCTS is fully prepared for one-click deployment across modern cloud platforms:
+
+- **Render.com Deployment:** Pre-configured with [`render.yaml`](./render.yaml) and [`Procfile`](./Procfile) for zero-downtime Python 3.12 hosting.
+- **Docker Containerization:** Ready-to-build multi-stage [`Dockerfile`](./Dockerfile) for container hosting on Railway, Fly.io, or AWS ECS.
+- **Step-by-Step Guide:** Full walkthrough covering TiDB Cloud MySQL, Render, and Local Wi-Fi / Exam Hall demonstrations available in [`DEPLOYMENT_GUIDE.md`](./DEPLOYMENT_GUIDE.md).
+
+---
+
 ## 📜 License & Acknowledgments
 
 Developed as a college Database Management Systems (DBMS) project. Built with FastAPI, MySQL, MongoDB, SQLAlchemy, and modern web standards.

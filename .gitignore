@@ -77,8 +77,10 @@ build/
 *.egg-info/
 
 # ---------------------------------------------------------------
-# Test coverage reports
+# Test coverage reports & scratch test files
 # ---------------------------------------------------------------
 .coverage
 htmlcov/
 .pytest_cache/
+test_tidb.py
+scratch/
