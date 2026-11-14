@@ -154,6 +154,19 @@ function initBookingPage() {
       return;
     }
 
+    const cleanSender = senderPhone.replace(/^\+91/, '').replace(/\D/g, '');
+    const cleanReceiver = receiverPhone.replace(/^\+91/, '').replace(/\D/g, '');
+
+    if (!/^[0-9]{10}$/.test(cleanSender)) {
+      alert("Sender mobile number must be exactly 10 digits.");
+      return;
+    }
+
+    if (!/^[0-9]{10}$/.test(cleanReceiver)) {
+      alert("Recipient mobile number must be exactly 10 digits.");
+      return;
+    }
+
     if (sourceCity.trim().toLowerCase() === destCity.trim().toLowerCase()) {
       alert("Source city and destination city cannot be identical. Inter-city dispatch required.");
       return;
@@ -176,9 +189,9 @@ function initBookingPage() {
 
       const payload = {
         sender_name: senderName,
-        sender_phone: senderPhone,
+        sender_phone: cleanSender,
         receiver_name: receiverName,
-        receiver_phone: receiverPhone,
+        receiver_phone: cleanReceiver,
         receiver_address: receiverAddress,
         source_city: sourceCity,
         destination_city: destCity,

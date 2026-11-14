@@ -242,6 +242,12 @@ function setupAddAgentModal() {
       return;
     }
 
+    const cleanPhone = phone.replace(/^\+91/, '').replace(/\D/g, '');
+    if (!/^[0-9]{10}$/.test(cleanPhone)) {
+      alert("Agent mobile number must be exactly 10 digits.");
+      return;
+    }
+
     submitBtn.disabled = true;
     submitBtn.textContent = "Registering...";
 
@@ -250,7 +256,7 @@ function setupAddAgentModal() {
         method: "POST",
         body: JSON.stringify({
           full_name,
-          phone,
+          phone: cleanPhone,
           vehicle_number,
           email,
           password

@@ -57,7 +57,7 @@ class UserRegisterRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=64, description="Password (at least 8 chars)")
     role: UserRole = Field(default=UserRole.CUSTOMER, description="Account role")
     full_name: str = Field(..., min_length=2, max_length=100, description="Full name")
-    phone: str = Field(..., min_length=10, max_length=15, description="10-14 digit phone number")
+    phone: str = Field(..., min_length=10, max_length=15, description="10-digit mobile number")
     address: Optional[str] = Field(default=None, max_length=255, description="Residential address")
     city: Optional[str] = Field(default=None, max_length=50, description="City")
     vehicle_number: Optional[str] = Field(default=None, max_length=20, description="Vehicle number (for delivery staff)")
@@ -73,9 +73,12 @@ class UserRegisterRequest(BaseModel):
     @classmethod
     def validate_phone(cls, v: str) -> str:
         cleaned = v.strip()
-        if not re.fullmatch(r"^\+?[0-9]{10,14}$", cleaned):
-            raise ValueError("Phone number must contain between 10 and 14 digits and no letters.")
-        return cleaned
+        digits = re.sub(r"\D", "", cleaned)
+        if cleaned.startswith("+91") and len(digits) == 12:
+            digits = digits[2:]
+        if len(digits) != 10:
+            raise ValueError("Mobile number must be exactly 10 digits.")
+        return digits
 
     @field_validator("role")
     @classmethod

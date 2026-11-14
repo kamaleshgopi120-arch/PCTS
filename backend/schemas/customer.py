@@ -22,7 +22,7 @@ class CustomerBase(BaseModel):
         ...,
         min_length=10,
         max_length=15,
-        description="Contact phone number (10-15 digits)"
+        description="Contact mobile number (exactly 10 digits)"
     )
     address: Optional[str] = Field(
         default=None,
@@ -48,14 +48,15 @@ class CustomerBase(BaseModel):
     @classmethod
     def validate_phone_digits(cls, v: str) -> str:
         """
-        Enforces EC-10 from edge_case.md:
-        Phone number must contain only digits (allowing optional leading +).
+        Enforces 10-digit mobile number validation.
         """
         cleaned = v.strip()
-        # Allow optional leading '+' followed by 10-14 digits
-        if not re.fullmatch(r"^\+?[0-9]{10,14}$", cleaned):
-            raise ValueError("Phone number must contain between 10 and 14 digits and no letters.")
-        return cleaned
+        digits = re.sub(r"\D", "", cleaned)
+        if cleaned.startswith("+91") and len(digits) == 12:
+            digits = digits[2:]
+        if len(digits) != 10:
+            raise ValueError("Mobile number must be exactly 10 digits.")
+        return digits
 
 
 class CustomerCreate(CustomerBase):
@@ -85,9 +86,12 @@ class CustomerUpdate(BaseModel):
     def validate_phone(cls, v: Optional[str]) -> Optional[str]:
         if v is not None:
             cleaned = v.strip()
-            if not re.fullmatch(r"^\+?[0-9]{10,14}$", cleaned):
-                raise ValueError("Phone number must contain between 10 and 14 digits and no letters.")
-            return cleaned
+            digits = re.sub(r"\D", "", cleaned)
+            if cleaned.startswith("+91") and len(digits) == 12:
+                digits = digits[2:]
+            if len(digits) != 10:
+                raise ValueError("Mobile number must be exactly 10 digits.")
+            return digits
         return v
 
 

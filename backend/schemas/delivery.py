@@ -42,10 +42,22 @@ VALID_STATUS_TRANSITIONS: Dict[str, List[str]] = {
 class DeliveryPersonCreate(BaseModel):
     """Schema for registering a new delivery executive (Admin only)."""
     full_name: str = Field(..., min_length=2, max_length=100, description="Full name of delivery agent")
-    phone: str = Field(..., min_length=10, max_length=15, description="Contact phone number")
+    phone: str = Field(..., min_length=10, max_length=15, description="10-digit mobile number")
     vehicle_number: Optional[str] = Field(default=None, max_length=30, description="Vehicle plate number")
     email: str = Field(..., max_length=100, description="Login email address")
     password: Optional[str] = Field(default="Delivery@12345", min_length=6, description="Initial account password")
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v: str) -> str:
+        import re
+        cleaned = v.strip()
+        digits = re.sub(r"\D", "", cleaned)
+        if cleaned.startswith("+91") and len(digits) == 12:
+            digits = digits[2:]
+        if len(digits) != 10:
+            raise ValueError("Mobile number must be exactly 10 digits.")
+        return digits
 
 
 class DeliveryCreate(BaseModel):

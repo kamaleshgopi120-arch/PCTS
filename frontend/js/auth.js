@@ -215,8 +215,9 @@ function initRegisterPage() {
       return;
     }
 
-    if (!/^\+?[0-9]{10,14}$/.test(phone)) {
-      showAlert(regAlert, "Phone number must be 10 to 14 digits (digits only, optional + prefix).");
+    const cleanPhone = phone.replace(/^\+91/, '').replace(/\D/g, '');
+    if (!/^[0-9]{10}$/.test(cleanPhone)) {
+      showAlert(regAlert, "Mobile number must be exactly 10 digits.");
       return;
     }
 
@@ -230,7 +231,7 @@ function initRegisterPage() {
         full_name: fullName,
         email: email,
         password: password,
-        phone: phone,
+        phone: cleanPhone,
         city: city,
         address: address,
         role: "customer"
@@ -253,7 +254,7 @@ function initRegisterPage() {
         ...tokenData,
         full_name: fullName,
         email: email,
-        phone: phone,
+        phone: cleanPhone,
         city: city
       };
 

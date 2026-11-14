@@ -44,9 +44,9 @@ def calculate_shipping_charge(weight_kg: float) -> float:
 class ParcelBase(BaseModel):
     """Shared core parcel fields."""
     sender_name: str = Field(..., min_length=2, max_length=100, description="Sender's full name")
-    sender_phone: str = Field(..., min_length=10, max_length=15, description="Sender's phone number")
+    sender_phone: str = Field(..., min_length=10, max_length=15, description="Sender's 10-digit mobile number")
     receiver_name: str = Field(..., min_length=2, max_length=100, description="Receiver's full name")
-    receiver_phone: str = Field(..., min_length=10, max_length=15, description="Receiver's phone number")
+    receiver_phone: str = Field(..., min_length=10, max_length=15, description="Receiver's 10-digit mobile number")
     receiver_address: str = Field(
         ...,
         min_length=3,
@@ -94,9 +94,12 @@ class ParcelBase(BaseModel):
     @classmethod
     def validate_phone(cls, v: str) -> str:
         cleaned = v.strip()
-        if not re.fullmatch(r"^\+?[0-9]{10,14}$", cleaned):
-            raise ValueError("Phone number must contain between 10 and 14 digits and no letters.")
-        return cleaned
+        digits = re.sub(r"\D", "", cleaned)
+        if cleaned.startswith("+91") and len(digits) == 12:
+            digits = digits[2:]
+        if len(digits) != 10:
+            raise ValueError("Mobile number must be exactly 10 digits.")
+        return digits
 
     @model_validator(mode="after")
     def validate_different_cities(self) -> "ParcelBase":
