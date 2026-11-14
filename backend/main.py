@@ -52,30 +52,38 @@ register_exception_handlers(app)
 
 
 # -----------------------------------------------------------------------------
-# STARTUP: ENSURE DEMO ACCOUNTS HAVE VALID PASSWORDS & MULTIPLE PROFILES
+# STARTUP: INITIALIZE DATABASE SCHEMA & ENSURE DEMO DATA
 # -----------------------------------------------------------------------------
 @app.on_event("startup")
 def ensure_default_demo_users():
     """
-    Ensure multiple standard demo accounts (Admins, Delivery Agents, Customers)
-    have valid, working records and profiles in MySQL for testing and evaluation.
+    1. Synchronizes DB schema (Base.metadata.create_all).
+    2. Ensures multiple standard demo accounts (Admins, Delivery Agents, Customers) exist.
+    3. Seeds realistic demo shipments, milestone checkpoints, and payments if database is empty.
     """
     try:
+        from backend.database import init_db_connection, SessionLocal
         from backend.models.user import User
         from backend.models.customer import Customer
         from backend.models.delivery_person import DeliveryPerson
+        from backend.models.parcel import Parcel
+        from backend.models.parcel_status import ParcelStatus
+        from backend.models.delivery import Delivery
+        from backend.models.payment import Payment
         from backend.security import hash_password, verify_password
-        from sqlalchemy import select
-        from backend.database import SessionLocal
+        from sqlalchemy import select, func
 
-        # 1. Admins
+        # 1. Initialize DB and create all tables if missing
+        init_db_connection()
+
+        # 2. Admins
         admins = [
             ("admin@pcts.com", "Admin@12345"),
             ("priya.admin@pcts.com", "Admin@12345"),
             ("vikram.admin@pcts.com", "Admin@12345")
         ]
 
-        # 2. Delivery Agents
+        # 3. Delivery Agents
         agents = [
             ("ravi.delivery@pcts.com", "Delivery@12345", "Ravi Varma", "9876543333", "TN-01-AB-1234"),
             ("suresh.delivery@pcts.com", "Delivery@12345", "Suresh Patil", "9876543334", "MH-12-CD-5678"),
@@ -83,7 +91,7 @@ def ensure_default_demo_users():
             ("sunil.delivery@pcts.com", "Delivery@12345", "Sunil Das", "9876543336", "DL-01-GH-3456")
         ]
 
-        # 3. Customers
+        # 4. Customers
         customers = [
             ("arun.kumar@gmail.com", "Customer@12345", "Arun Kumar", "9876543210", "12, 4th Main Road, Anna Nagar", "Chennai"),
             ("priya.sharma@yahoo.com", "Customer@12345", "Priya Sharma", "9876543222", "45, Palm Avenue, Whitefield", "Bengaluru"),
@@ -103,6 +111,7 @@ def ensure_default_demo_users():
             db.flush()
 
             # Upsert Delivery Agents
+            agent_map = {}
             for email, pwd, full_name, phone, vehicle in agents:
                 user = db.scalar(select(User).where(User.email == email))
                 if not user:
@@ -122,9 +131,12 @@ def ensure_default_demo_users():
                         is_active=True
                     )
                     db.add(agent)
+                    db.flush()
+                agent_map[email] = agent
             db.flush()
 
             # Upsert Customers
+            customer_map = {}
             for email, pwd, full_name, phone, address, city in customers:
                 user = db.scalar(select(User).where(User.email == email))
                 if not user:
@@ -144,12 +156,160 @@ def ensure_default_demo_users():
                         city=city
                     )
                     db.add(cust)
-
+                    db.flush()
+                customer_map[email] = cust
             db.commit()
+
+            # 5. Seed Demo Parcels if table is empty
+            parcel_count = db.scalar(select(func.count(Parcel.parcel_id)))
+            if parcel_count == 0:
+                print("[Database] Seeding initial demo shipments, tracking milestones, and deliveries...")
+                arun = customer_map.get("arun.kumar@gmail.com")
+                priya = customer_map.get("priya.sharma@yahoo.com")
+                ravi = agent_map.get("ravi.delivery@pcts.com")
+                suresh = agent_map.get("suresh.delivery@pcts.com")
+
+                if arun and priya and ravi and suresh:
+                    demo_parcels = [
+                        {
+                            "tracking_id": "PCTS-20261114-1001",
+                            "customer_id": arun.customer_id,
+                            "sender_name": "Arun Kumar",
+                            "sender_phone": "9876543210",
+                            "receiver_name": "Kavita Nair",
+                            "receiver_phone": "9876540001",
+                            "receiver_address": "88, Marine Drive, Fort Kochi",
+                            "source_city": "Chennai",
+                            "destination_city": "Bengaluru",
+                            "parcel_type": "Electronics",
+                            "weight_kg": 2.50,
+                            "description": "Smart Tablet and Accessories",
+                            "charge": 150.00,
+                            "status": "In Transit",
+                            "location": "Vellore Transit Hub",
+                            "agent": ravi,
+                            "payment_method": "UPI",
+                            "payment_status": "Paid"
+                        },
+                        {
+                            "tracking_id": "PCTS-20261114-1002",
+                            "customer_id": arun.customer_id,
+                            "sender_name": "Arun Kumar",
+                            "sender_phone": "9876543210",
+                            "receiver_name": "Suresh Babu",
+                            "receiver_phone": "9876540002",
+                            "receiver_address": "15, Beach Road, Puducherry",
+                            "source_city": "Chennai",
+                            "destination_city": "Puducherry",
+                            "parcel_type": "Document",
+                            "weight_kg": 0.80,
+                            "description": "Legal & University Certificates",
+                            "charge": 60.00,
+                            "status": "Booked",
+                            "location": "Chennai Central Hub",
+                            "agent": None,
+                            "payment_method": "Cash on Delivery",
+                            "payment_status": "Pending"
+                        },
+                        {
+                            "tracking_id": "PCTS-20261114-1003",
+                            "customer_id": priya.customer_id,
+                            "sender_name": "Priya Sharma",
+                            "sender_phone": "9876543222",
+                            "receiver_name": "Deepak Verma",
+                            "receiver_phone": "9876540003",
+                            "receiver_address": "45, Palm Avenue, Whitefield",
+                            "source_city": "Bengaluru",
+                            "destination_city": "Chennai",
+                            "parcel_type": "Fragile",
+                            "weight_kg": 4.50,
+                            "description": "Ceramic Dinnerware Set",
+                            "charge": 220.00,
+                            "status": "Out for Delivery",
+                            "location": "Chennai South Delivery Depot",
+                            "agent": ravi,
+                            "payment_method": "Credit Card",
+                            "payment_status": "Paid"
+                        },
+                        {
+                            "tracking_id": "PCTS-20261114-1004",
+                            "customer_id": priya.customer_id,
+                            "sender_name": "Priya Sharma",
+                            "sender_phone": "9876543222",
+                            "receiver_name": "Ananya Sen",
+                            "receiver_phone": "9876540004",
+                            "receiver_address": "12, Jubilee Hills, Hyderabad",
+                            "source_city": "Bengaluru",
+                            "destination_city": "Hyderabad",
+                            "parcel_type": "General",
+                            "weight_kg": 8.00,
+                            "description": "Reference Books and Journals",
+                            "charge": 320.00,
+                            "status": "Delivered",
+                            "location": "Hyderabad Banjara Hills Hub",
+                            "agent": suresh,
+                            "payment_method": "Net Banking",
+                            "payment_status": "Paid",
+                            "delivered": True
+                        }
+                    ]
+
+                    for p_data in demo_parcels:
+                        p = Parcel(
+                            tracking_id=p_data["tracking_id"],
+                            customer_id=p_data["customer_id"],
+                            sender_name=p_data["sender_name"],
+                            sender_phone=p_data["sender_phone"],
+                            receiver_name=p_data["receiver_name"],
+                            receiver_phone=p_data["receiver_phone"],
+                            receiver_address=p_data["receiver_address"],
+                            source_city=p_data["source_city"],
+                            destination_city=p_data["destination_city"],
+                            parcel_type=p_data["parcel_type"],
+                            weight_kg=p_data["weight_kg"],
+                            description=p_data["description"],
+                            charge=p_data["charge"],
+                            booked_at=datetime.now()
+                        )
+                        db.add(p)
+                        db.flush()
+
+                        # Status
+                        ps = ParcelStatus(
+                            parcel_id=p.parcel_id,
+                            status=p_data["status"],
+                            location=p_data["location"],
+                            updated_at=datetime.now()
+                        )
+                        db.add(ps)
+
+                        # Delivery
+                        if p_data["agent"]:
+                            deliv = Delivery(
+                                parcel_id=p.parcel_id,
+                                delivery_person_id=p_data["agent"].delivery_person_id,
+                                assigned_at=datetime.now(),
+                                delivered_at=datetime.now() if p_data.get("delivered") else None
+                            )
+                            db.add(deliv)
+
+                        # Payment
+                        pay = Payment(
+                            parcel_id=p.parcel_id,
+                            amount=p_data["charge"],
+                            payment_method=p_data["payment_method"],
+                            payment_status=p_data["payment_status"],
+                            paid_at=datetime.now() if p_data["payment_status"] == "Paid" else None
+                        )
+                        db.add(pay)
+
+                    db.commit()
+                    print(f"[Database] Successfully seeded {len(demo_parcels)} demo shipments.")
+
         finally:
             db.close()
     except Exception as e:
-        print(f"[Warning] Demo users sync: {e}")
+        print(f"[Warning] Demo data synchronization error: {e}")
 
 
 # -----------------------------------------------------------------------------
@@ -254,18 +414,36 @@ def system_info():
 def database_health_check(db: Session = Depends(get_db)):
     """
     Verifies that FastAPI can acquire a connection from the SQLAlchemy pool
-    and successfully query the MySQL database.
+    and successfully query the database.
     """
-    result = db.execute(text("SELECT 1 AS alive")).scalar()
     from backend.mongo import is_mongo_connected
+    from backend.models.user import User
+    from backend.models.parcel import Parcel
+    from backend.database import engine
+
     mongo_status = "connected" if is_mongo_connected() else "offline"
-    return {
-        "database": "MySQL 8.0",
-        "status": "connected" if result == 1 else "unresponsive",
-        "orm": "SQLAlchemy 2.0",
-        "nosql_database": "MongoDB",
-        "nosql_status": mongo_status
-    }
+    try:
+        result = db.execute(text("SELECT 1 AS alive")).scalar()
+        user_count = db.query(User).count()
+        parcel_count = db.query(Parcel).count()
+        return {
+            "status": "connected" if result == 1 else "unresponsive",
+            "dialect": engine.dialect.name,
+            "host": engine.url.host or "local_sqlite",
+            "database_url_configured": bool(os.getenv("DATABASE_URL")),
+            "users_in_db": user_count,
+            "parcels_in_db": parcel_count,
+            "nosql_database": "MongoDB",
+            "nosql_status": mongo_status
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error_detail": str(e),
+            "database_url_configured": bool(os.getenv("DATABASE_URL")),
+            "nosql_database": "MongoDB",
+            "nosql_status": mongo_status
+        }
 
 
 # -----------------------------------------------------------------------------

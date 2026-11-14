@@ -241,15 +241,23 @@ def get_monthly_report_endpoint(
     - Status breakdown.
     - Destination city breakdown.
     """
+    # Dialect-compatible date filter (works on MySQL, TiDB, and SQLite)
+    is_sqlite = db.bind.dialect.name == "sqlite"
+    date_filter = (
+        "CAST(strftime('%Y', p.booked_at) AS INTEGER) = :yr AND CAST(strftime('%m', p.booked_at) AS INTEGER) = :mo"
+        if is_sqlite
+        else "YEAR(p.booked_at) = :yr AND MONTH(p.booked_at) = :mo"
+    )
+
     # Overview metrics
     overview_row = db.execute(
         text(
-            "SELECT "
-            "  COUNT(p.parcel_id) AS total_parcels_booked, "
-            "  COALESCE(SUM(p.charge), 0.00) AS total_revenue, "
-            "  COALESCE(ROUND(AVG(p.weight_kg), 2), 0.00) AS average_weight_kg "
-            "FROM parcel p "
-            "WHERE YEAR(p.booked_at) = :yr AND MONTH(p.booked_at) = :mo"
+            f"SELECT "
+            f"  COUNT(p.parcel_id) AS total_parcels_booked, "
+            f"  COALESCE(SUM(p.charge), 0.00) AS total_revenue, "
+            f"  COALESCE(ROUND(AVG(p.weight_kg), 2), 0.00) AS average_weight_kg "
+            f"FROM parcel p "
+            f"WHERE {date_filter}"
         ),
         {"yr": year, "mo": month}
     ).fetchone()
@@ -257,15 +265,15 @@ def get_monthly_report_endpoint(
     # Status breakdown
     status_rows = db.execute(
         text(
-            "SELECT "
-            "  ps.status AS parcel_status, "
-            "  COUNT(*) AS count_in_status, "
-            "  ROUND(COALESCE(SUM(p.charge), 0), 2) AS revenue_for_status "
-            "FROM parcel p "
-            "INNER JOIN parcel_status ps ON p.parcel_id = ps.parcel_id "
-            "WHERE YEAR(p.booked_at) = :yr AND MONTH(p.booked_at) = :mo "
-            "GROUP BY ps.status "
-            "ORDER BY count_in_status DESC"
+            f"SELECT "
+            f"  ps.status AS parcel_status, "
+            f"  COUNT(*) AS count_in_status, "
+            f"  ROUND(COALESCE(SUM(p.charge), 0), 2) AS revenue_for_status "
+            f"FROM parcel p "
+            f"INNER JOIN parcel_status ps ON p.parcel_id = ps.parcel_id "
+            f"WHERE {date_filter} "
+            f"GROUP BY ps.status "
+            f"ORDER BY count_in_status DESC"
         ),
         {"yr": year, "mo": month}
     ).fetchall()
@@ -273,14 +281,14 @@ def get_monthly_report_endpoint(
     # Destination city breakdown
     city_rows = db.execute(
         text(
-            "SELECT "
-            "  p.destination_city, "
-            "  COUNT(*) AS parcel_count, "
-            "  ROUND(SUM(p.charge), 2) AS city_revenue "
-            "FROM parcel p "
-            "WHERE YEAR(p.booked_at) = :yr AND MONTH(p.booked_at) = :mo "
-            "GROUP BY p.destination_city "
-            "ORDER BY parcel_count DESC"
+            f"SELECT "
+            f"  p.destination_city, "
+            f"  COUNT(*) AS parcel_count, "
+            f"  ROUND(SUM(p.charge), 2) AS city_revenue "
+            f"FROM parcel p "
+            f"WHERE {date_filter} "
+            f"GROUP BY p.destination_city "
+            f"ORDER BY parcel_count DESC"
         ),
         {"yr": year, "mo": month}
     ).fetchall()
