@@ -260,7 +260,7 @@ def list_parcels(
     status_filter: Optional[str] = Query(None, alias="status", description="Filter by status (e.g. Booked, In Transit)"),
     city: Optional[str] = Query(None, description="Filter by destination city"),
     skip: int = Query(0, ge=0, description="Records to skip"),
-    limit: int = Query(20, ge=1, le=100, description="Max records to return"),
+    limit: int = Query(20, ge=1, le=1000, description="Max records to return"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):

@@ -551,9 +551,9 @@ function setupExportReport() {
       exportBtn.innerHTML = "⏳ Preparing PDF Report...";
 
       // 1. Fetch latest parcels if none cached
-      let parcelsToExport = allParcels;
-      if (!parcelsToExport || parcelsToExport.length === 0) {
-        parcelsToExport = await apiRequest("/api/parcels?limit=500");
+      let parcelsToExport = (allParcels && allParcels.length > 0) ? allParcels : null;
+      if (!parcelsToExport) {
+        parcelsToExport = await apiRequest("/api/parcels?limit=100");
       }
 
       if (!parcelsToExport || parcelsToExport.length === 0) {
