@@ -40,6 +40,7 @@ async function initAdminDashboard() {
   setupSearch();
   setupAssignModal();
   setupPaymentModal();
+  setupExportReport();
 
   const refreshBtn = document.getElementById("btnRefreshTable");
   if (refreshBtn) {
@@ -534,4 +535,113 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+/**
+ * Setup CSV Export for Admin Operations & Shipments
+ */
+function setupExportReport() {
+  const exportBtn = document.getElementById("btnExportReport");
+  if (!exportBtn) return;
+
+  exportBtn.addEventListener("click", async () => {
+    const origHtml = exportBtn.innerHTML;
+    try {
+      exportBtn.disabled = true;
+      exportBtn.innerHTML = "⏳ Generating CSV...";
+
+      // 1. Fetch latest parcels if none cached
+      let parcelsToExport = allParcels;
+      if (!parcelsToExport || parcelsToExport.length === 0) {
+        parcelsToExport = await apiRequest("/api/parcels?limit=500");
+      }
+
+      if (!parcelsToExport || parcelsToExport.length === 0) {
+        alert("No shipment records available to export.");
+        exportBtn.disabled = false;
+        exportBtn.innerHTML = origHtml;
+        return;
+      }
+
+      // 2. Define CSV Headers
+      const headers = [
+        "Tracking ID",
+        "Booked Date",
+        "Sender Name",
+        "Sender Mobile",
+        "Receiver Name",
+        "Receiver Mobile",
+        "Delivery Address",
+        "Origin City",
+        "Destination City",
+        "Category",
+        "Weight (kg)",
+        "Charge (INR)",
+        "Current Status",
+        "Location Checkpoint",
+        "Assigned Courier Agent",
+        "Agent Mobile",
+        "Payment Status",
+        "Payment Method"
+      ];
+
+      const escapeCSV = (val) => {
+        if (val === null || val === undefined) return '""';
+        const str = String(val).replace(/"/g, '""');
+        return `"${str}"`;
+      };
+
+      const rows = [headers.join(",")];
+
+      parcelsToExport.forEach(p => {
+        const bookedDate = p.booked_at ? new Date(p.booked_at).toLocaleString('en-IN') : 'N/A';
+        const line = [
+          escapeCSV(p.tracking_id),
+          escapeCSV(bookedDate),
+          escapeCSV(p.sender_name),
+          escapeCSV(p.sender_phone),
+          escapeCSV(p.receiver_name),
+          escapeCSV(p.receiver_phone),
+          escapeCSV(p.receiver_address || 'Registered Address'),
+          escapeCSV(p.source_city),
+          escapeCSV(p.destination_city),
+          escapeCSV(p.parcel_type),
+          escapeCSV(p.weight_kg),
+          escapeCSV(p.charge),
+          escapeCSV(p.status || 'Booked'),
+          escapeCSV(p.location || 'Processing Hub'),
+          escapeCSV(p.delivery_person_name || 'Unassigned'),
+          escapeCSV(p.delivery_person_phone || 'N/A'),
+          escapeCSV(p.payment_status || 'Pending'),
+          escapeCSV(p.payment_method || 'Cash on Delivery')
+        ];
+        rows.push(line.join(","));
+      });
+
+      // 3. Trigger direct browser download with UTF-8 BOM
+      const csvContent = "\uFEFF" + rows.join("\r\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.createElement("a");
+      const today = new Date().toISOString().split("T")[0];
+      downloadLink.href = url;
+      downloadLink.download = `PCTS_Operations_Report_${today}.csv`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(url);
+
+      exportBtn.disabled = false;
+      exportBtn.innerHTML = "✅ Download Complete!";
+      setTimeout(() => {
+        exportBtn.innerHTML = origHtml;
+      }, 2500);
+
+    } catch (err) {
+      console.error("Export report failed:", err);
+      alert("Failed to export report: " + (err.message || "Unknown error"));
+      exportBtn.disabled = false;
+      exportBtn.innerHTML = origHtml;
+    }
+  });
 }

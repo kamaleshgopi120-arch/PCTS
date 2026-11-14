@@ -11,9 +11,11 @@ Restricted exclusively to Administrator accounts (require_admin).
 =============================================================================
 """
 
+import csv
+import io
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, text
 
@@ -307,4 +309,90 @@ def get_monthly_report_endpoint(
             {"city": str(r.destination_city), "count": int(r.parcel_count), "revenue": float(r.city_revenue)}
             for r in city_rows
         ]
+    )
+
+
+# -----------------------------------------------------------------------------
+# 5. EXPORT COMPREHENSIVE LOGISTICS REPORT TO CSV (GET /api/reports/export)
+# -----------------------------------------------------------------------------
+@router.get(
+    "/export",
+    summary="Export all parcels and financial records to CSV (Admin only)"
+)
+def export_parcels_csv(
+    db: Session = Depends(get_db)
+):
+    """
+    Generates and returns an immediate downloadable CSV of all logistics shipments,
+    including sender, receiver, route, weight, charge, status, and payment info.
+    """
+    parcels = db.scalars(
+        select(Parcel).order_by(Parcel.parcel_id.desc())
+    ).all()
+
+    output = io.StringIO()
+    # Write UTF-8 BOM so Microsoft Excel opens it cleanly with proper character encoding
+    output.write("\ufeff")
+    writer = csv.writer(output)
+
+    # Headers
+    writer.writerow([
+        "Tracking ID",
+        "Booked At",
+        "Sender Name",
+        "Sender Mobile",
+        "Receiver Name",
+        "Receiver Mobile",
+        "Delivery Address",
+        "Origin City",
+        "Destination City",
+        "Category",
+        "Weight (kg)",
+        "Charge (INR)",
+        "Current Status",
+        "Location Checkpoint",
+        "Assigned Courier Agent",
+        "Agent Mobile",
+        "Payment Status",
+        "Payment Method"
+    ])
+
+    for p in parcels:
+        status_name = p.status.status if p.status else "Booked"
+        location_name = p.status.location if p.status else "Origin Hub"
+        agent_name = p.delivery.delivery_person.full_name if (p.delivery and p.delivery.delivery_person) else "Unassigned"
+        agent_phone = p.delivery.delivery_person.phone if (p.delivery and p.delivery.delivery_person) else "N/A"
+        payment_status = p.payment.payment_status if p.payment else "Pending"
+        payment_method = p.payment.payment_method if p.payment else "Cash on Delivery"
+        booked_str = p.booked_at.strftime("%Y-%m-%d %H:%M:%S") if p.booked_at else "N/A"
+
+        writer.writerow([
+            p.tracking_id,
+            booked_str,
+            p.sender_name,
+            p.sender_phone,
+            p.receiver_name,
+            p.receiver_phone,
+            p.receiver_address or "Registered Address",
+            p.source_city,
+            p.destination_city,
+            p.parcel_type,
+            float(p.weight_kg),
+            float(p.charge),
+            status_name,
+            location_name,
+            agent_name,
+            agent_phone,
+            payment_status,
+            payment_method
+        ])
+
+    csv_data = output.getvalue()
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=PCTS_Operations_Report_{today_str}.csv"
+        }
     )
