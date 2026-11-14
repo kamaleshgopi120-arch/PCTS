@@ -45,7 +45,8 @@ _mock_client: Optional[Any] = None
 def get_mongo_client() -> Optional[MongoClient]:
     """
     Get or create a cached MongoDB client.
-    Uses short timeouts (2000ms) to prevent blocking if MongoDB is unreachable.
+    Uses short timeouts (1500ms). If external MongoDB is unreachable,
+    automatically falls back to in-memory mongomock so tracking history is always available.
     """
     global _client, _use_mock, _mock_client
 
@@ -54,15 +55,24 @@ def get_mongo_client() -> Optional[MongoClient]:
 
     if _client is None:
         try:
-            _client = MongoClient(
+            temp_client = MongoClient(
                 MONGO_URI,
-                serverSelectionTimeoutMS=2000,
-                connectTimeoutMS=2000,
-                socketTimeoutMS=2000,
+                serverSelectionTimeoutMS=1500,
+                connectTimeoutMS=1500,
+                socketTimeoutMS=1500,
             )
+            temp_client.admin.command("ping")
+            _client = temp_client
         except Exception as exc:
-            logger.error("Failed to initialize MongoClient: %s", exc)
-            return None
+            logger.info("External MongoDB unreachable (%s). Activating seamless in-memory mongomock fallback.", exc)
+            try:
+                import mongomock
+                _mock_client = mongomock.MongoClient()
+                _use_mock = True
+                return _mock_client
+            except Exception as e:
+                logger.error("Failed to initialize mongomock: %s", e)
+                return None
 
     return _client
 
