@@ -538,7 +538,7 @@ function escapeHtml(str) {
 }
 
 /**
- * Setup CSV Export for Admin Operations & Shipments
+ * Setup Official PDF & CSV Export for Admin Operations & Shipments
  */
 function setupExportReport() {
   const exportBtn = document.getElementById("btnExportReport");
@@ -548,7 +548,7 @@ function setupExportReport() {
     const origHtml = exportBtn.innerHTML;
     try {
       exportBtn.disabled = true;
-      exportBtn.innerHTML = "⏳ Generating CSV...";
+      exportBtn.innerHTML = "⏳ Preparing PDF Report...";
 
       // 1. Fetch latest parcels if none cached
       let parcelsToExport = allParcels;
@@ -557,89 +557,318 @@ function setupExportReport() {
       }
 
       if (!parcelsToExport || parcelsToExport.length === 0) {
-        alert("No shipment records available to export.");
+        alert("No shipment records available to generate PDF report.");
         exportBtn.disabled = false;
         exportBtn.innerHTML = origHtml;
         return;
       }
 
-      // 2. Define CSV Headers
-      const headers = [
-        "Tracking ID",
-        "Booked Date",
-        "Sender Name",
-        "Sender Mobile",
-        "Receiver Name",
-        "Receiver Mobile",
-        "Delivery Address",
-        "Origin City",
-        "Destination City",
-        "Category",
-        "Weight (kg)",
-        "Charge (INR)",
-        "Current Status",
-        "Location Checkpoint",
-        "Assigned Courier Agent",
-        "Agent Mobile",
-        "Payment Status",
-        "Payment Method"
-      ];
-
-      const escapeCSV = (val) => {
-        if (val === null || val === undefined) return '""';
-        const str = String(val).replace(/"/g, '""');
-        return `"${str}"`;
-      };
-
-      const rows = [headers.join(",")];
+      // 2. Compute Summary Metrics for the PDF Header
+      const totalShipments = parcelsToExport.length;
+      let totalRevenue = 0;
+      let activeTransit = 0;
+      let deliveredCount = 0;
 
       parcelsToExport.forEach(p => {
-        const bookedDate = p.booked_at ? new Date(p.booked_at).toLocaleString('en-IN') : 'N/A';
-        const line = [
-          escapeCSV(p.tracking_id),
-          escapeCSV(bookedDate),
-          escapeCSV(p.sender_name),
-          escapeCSV(p.sender_phone),
-          escapeCSV(p.receiver_name),
-          escapeCSV(p.receiver_phone),
-          escapeCSV(p.receiver_address || 'Registered Address'),
-          escapeCSV(p.source_city),
-          escapeCSV(p.destination_city),
-          escapeCSV(p.parcel_type),
-          escapeCSV(p.weight_kg),
-          escapeCSV(p.charge),
-          escapeCSV(p.status || 'Booked'),
-          escapeCSV(p.location || 'Processing Hub'),
-          escapeCSV(p.delivery_person_name || 'Unassigned'),
-          escapeCSV(p.delivery_person_phone || 'N/A'),
-          escapeCSV(p.payment_status || 'Pending'),
-          escapeCSV(p.payment_method || 'Cash on Delivery')
-        ];
-        rows.push(line.join(","));
+        totalRevenue += parseFloat(p.charge || 0);
+        const s = (p.status || "").toLowerCase();
+        if (s === "delivered") deliveredCount++;
+        else if (s.includes("transit") || s.includes("out for delivery") || s.includes("picked") || s.includes("warehouse")) {
+          activeTransit++;
+        }
       });
 
-      // 3. Trigger direct browser download with UTF-8 BOM
-      const csvContent = "\uFEFF" + rows.join("\r\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const downloadLink = document.createElement("a");
-      const today = new Date().toISOString().split("T")[0];
-      downloadLink.href = url;
-      downloadLink.download = `PCTS_Operations_Report_${today}.csv`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      URL.revokeObjectURL(url);
+      const todayStr = new Date().toLocaleDateString('en-IN', {
+        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+      const fileDate = new Date().toISOString().split("T")[0];
+
+      // 3. Build Table Rows HTML
+      const tableRowsHtml = parcelsToExport.map((p, idx) => {
+        const booked = p.booked_at ? new Date(p.booked_at).toLocaleDateString('en-IN') : 'N/A';
+        const status = p.status || 'Booked';
+        let badgeColor = "#2563eb";
+        let badgeBg = "#dbeafe";
+        if (status === "Delivered") { badgeColor = "#059669"; badgeBg = "#d1fae5"; }
+        else if (status.includes("Transit") || status.includes("Out")) { badgeColor = "#d97706"; badgeBg = "#fef3c7"; }
+        else if (status.includes("Failed") || status.includes("Returned")) { badgeColor = "#dc2626"; badgeBg = "#fee2e2"; }
+
+        const payStatus = p.payment_status || 'Pending';
+        const payColor = payStatus === "Paid" ? "#059669" : "#d97706";
+
+        return `
+          <tr>
+            <td style="text-align: center; font-weight: bold; color: #64748b;">${idx + 1}</td>
+            <td style="font-family: monospace; font-weight: 700; color: #1e3a8a;">${escapeHtml(p.tracking_id)}</td>
+            <td>${booked}</td>
+            <td>
+              <strong>${escapeHtml(p.sender_name)}</strong><br>
+              <span style="font-size: 0.78rem; color: #64748b;">${escapeHtml(p.sender_phone)}</span>
+            </td>
+            <td>
+              <strong>${escapeHtml(p.receiver_name)}</strong><br>
+              <span style="font-size: 0.78rem; color: #64748b;">${escapeHtml(p.destination_city)} (${escapeHtml(p.receiver_phone)})</span>
+            </td>
+            <td style="text-align: center;">${p.weight_kg} kg<br><span style="font-size: 0.75rem; color: #64748b;">${escapeHtml(p.parcel_type)}</span></td>
+            <td style="text-align: right; font-weight: 700; color: #0f172a;">₹${parseFloat(p.charge).toFixed(2)}</td>
+            <td style="text-align: center;">
+              <span style="background: ${badgeBg}; color: ${badgeColor}; padding: 3px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-block;">
+                ${escapeHtml(status)}
+              </span>
+            </td>
+            <td>
+              ${escapeHtml(p.delivery_person_name || 'Unassigned')}<br>
+              <span style="font-size: 0.75rem; color: #64748b;">${escapeHtml(p.location || 'Processing Hub')}</span>
+            </td>
+            <td style="text-align: center; font-weight: 700; font-size: 0.8rem; color: ${payColor};">
+              ${escapeHtml(payStatus)}<br>
+              <span style="font-size: 0.72rem; color: #64748b; font-weight: normal;">${escapeHtml(p.payment_method || 'COD')}</span>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      // 4. Construct Complete Printable HTML Document
+      const pdfHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PCTS_Operations_Report_${fileDate}</title>
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 10mm;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      color: #0f172a;
+      background: #f8fafc;
+      margin: 0;
+      padding: 20px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    @media print {
+      body { background: #ffffff; padding: 0; }
+      .no-print { display: none !important; }
+      table { page-break-inside: auto; }
+      tr { page-break-inside: avoid; page-break-after: auto; }
+      thead { display: table-header-group; }
+    }
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #1e293b;
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #475569; color: #fff; }
+    .report-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .header-table { width: 100%; border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 20px; }
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-box {
+      background: #f1f5f9;
+      border-left: 4px solid #2563eb;
+      padding: 12px 16px;
+      border-radius: 4px;
+    }
+    .stat-box h4 { margin: 0; font-size: 0.78rem; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; }
+    .stat-box .val { font-size: 1.4rem; font-weight: 800; color: #0f172a; margin-top: 4px; }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    table.data-table th {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 8px 10px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    table.data-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+    table.data-table tr:nth-child(even) td { background: #f8fafc; }
+    .footer-sign {
+      margin-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid #cbd5e1;
+      padding-top: 16px;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Print Control Toolbar (Screen only) -->
+  <div class="toolbar no-print">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 1.2rem;">📄</span>
+      <strong>PCTS Official Executive Report Viewer</strong>
+      <span style="font-size: 0.8rem; opacity: 0.8;">(Select "Destination: Save as PDF" in print dialog)</span>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-primary" onclick="window.print()">
+        🖨️ Save as PDF / Print
+      </button>
+      <button class="btn btn-secondary" onclick="window.close()">
+        ✖️ Close
+      </button>
+    </div>
+  </div>
+
+  <div class="report-card">
+    <table class="header-table">
+      <tr>
+        <td style="vertical-align: top;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="font-size: 2.2rem;">📦</div>
+            <div>
+              <h1 style="margin: 0; font-size: 1.5rem; color: #0f172a; letter-spacing: -0.02em;">
+                PARCEL AND COURIER TRACKING SYSTEM (PCTS)
+              </h1>
+              <p style="margin: 3px 0 0; color: #475569; font-size: 0.85rem;">
+                National Logistics Hub & Operations Command Center • Executive Audit Report
+              </p>
+            </div>
+          </div>
+        </td>
+        <td style="text-align: right; vertical-align: top; font-size: 0.82rem; color: #475569;">
+          <strong>Report Date:</strong> ${todayStr}<br>
+          <strong>Generated By:</strong> National Operations HQ (Admin)<br>
+          <strong>Database:</strong> TiDB Cloud Serverless (MySQL 8.0)
+        </td>
+      </tr>
+    </table>
+
+    <!-- Key Metrics Grid -->
+    <div class="stat-row">
+      <div class="stat-box" style="border-left-color: #2563eb;">
+        <h4>Total Shipments</h4>
+        <div class="val">${totalShipments} Packages</div>
+      </div>
+      <div class="stat-box" style="border-left-color: #d97706;">
+        <h4>Active In-Transit</h4>
+        <div class="val" style="color: #d97706;">${activeTransit} Dispatches</div>
+      </div>
+      <div class="stat-box" style="border-left-color: #059669;">
+        <h4>Successfully Delivered</h4>
+        <div class="val" style="color: #059669;">${deliveredCount} Completed</div>
+      </div>
+      <div class="stat-box" style="border-left-color: #7c3aed;">
+        <h4>Total Revenue Booked</h4>
+        <div class="val" style="color: #7c3aed;">₹${totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width: 30px; text-align: center;">#</th>
+          <th>Tracking ID</th>
+          <th>Booked Date</th>
+          <th>Sender Info</th>
+          <th>Recipient & Destination</th>
+          <th style="text-align: center;">Weight</th>
+          <th style="text-align: right;">Charge</th>
+          <th style="text-align: center;">Milestone Status</th>
+          <th>Assigned Courier Agent</th>
+          <th style="text-align: center;">Settlement</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tableRowsHtml}
+      </tbody>
+    </table>
+
+    <!-- Sign-off Block -->
+    <div class="footer-sign">
+      <div>
+        <strong>System Verification:</strong> PCTS Relational Database Engine (BCNF Compliant)<br>
+        <strong>Academic Record:</strong> CSPL502 — Database Systems Lab, Pondicherry University
+      </div>
+      <div style="text-align: right;">
+        <strong>Authorized Signatory:</strong><br>
+        <span style="font-family: serif; font-size: 1.1rem; color: #1e3a8a;">G. Kamalesh</span><br>
+        <span style="font-size: 0.75rem;">(Reg. No: 24BTCSEPY0026)</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Auto-trigger native Print / Save as PDF dialog after render
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        window.print();
+      }, 600);
+    });
+  <\/script>
+</body>
+</html>`;
+
+      // 5. Open in dedicated popup/tab and write content
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        alert("Popup blocked! Please allow popups for this site to generate and save your PDF report.");
+        exportBtn.disabled = false;
+        exportBtn.innerHTML = origHtml;
+        return;
+      }
+
+      printWindow.document.open();
+      printWindow.document.write(pdfHtml);
+      printWindow.document.close();
 
       exportBtn.disabled = false;
-      exportBtn.innerHTML = "✅ Download Complete!";
+      exportBtn.innerHTML = "✅ PDF Generated!";
       setTimeout(() => {
         exportBtn.innerHTML = origHtml;
       }, 2500);
 
     } catch (err) {
-      console.error("Export report failed:", err);
-      alert("Failed to export report: " + (err.message || "Unknown error"));
+      console.error("Export PDF failed:", err);
+      alert("Failed to export PDF report: " + (err.message || "Unknown error"));
       exportBtn.disabled = false;
       exportBtn.innerHTML = origHtml;
     }
